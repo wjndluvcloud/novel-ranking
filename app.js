@@ -6,6 +6,7 @@ const nextButton = document.querySelector('#month-next');
 
 const rankingOrder = ['monthlyTickets', 'bestSellers', 'readerRetention', 'mostFollowed'];
 const fallbackSnapshot = window.QIDIAN_FALLBACK_SNAPSHOT;
+const genreLabel = window.qidianGenreLabel ?? ((category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
 
 let archive = null;
 let activePeriod = null;
@@ -91,6 +92,9 @@ function createRankItem(entry, ranking, priorSnapshot) {
   const item = createElement('li', 'rank-item');
   item.append(createElement('span', 'position', String(entry.rank)));
   const info = createElement('span', 'book-info');
+  const genre = genreLabel(entry.category, entry.subcategory);
+  info.dataset.tooltip = `Genre: ${genre}`;
+  info.title = `Genre: ${genre}\nSource: ${[entry.category, entry.subcategory].filter(Boolean).join(' · ')}`;
   info.append(createElement('span', 'book-name', entry.title));
   info.append(createElement('small', 'book-author', entry.author));
   item.append(info, movementFor(entry, ranking, priorSnapshot));
