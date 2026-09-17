@@ -1,0 +1,8 @@
+.tmp/
+.tools/
+node_modules/
+/project-notes/
+.DS_Store
+npm-debug.log*
+playwright-report/
+test-results/

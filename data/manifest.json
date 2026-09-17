@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": "qidian",
+  "periods": [
+    {
+      "period": "2026-08",
+      "file": "monthly/2026-08.json",
+      "generatedAt": "2026-09-17T08:01:56.056Z",
+      "rankings": {
+        "monthlyTickets": {
+          "label": "Monthly Tickets",
+          "chineseLabel": "月票榜",
+          "snapshotPolicy": "initial-baseline",
+          "capturedAt": "2026-09-17T08:01:47.403Z",
+          "sourceUrl": "https://www.qidian.com/rank/yuepiao/"
+        },
+        "bestSellers": {
+          "label": "Best Sellers",
+          "chineseLabel": "畅销榜",
+          "snapshotPolicy": "initial-baseline",
+          "capturedAt": "2026-09-17T08:01:49.962Z",
+          "sourceUrl": "https://www.qidian.com/rank/hotsales/"
+        },
+        "readerRetention": {
+          "label": "Reader Retention",
+          "chineseLabel": "留存榜",
+          "snapshotPolicy": "initial-baseline",
+          "capturedAt": "2026-09-17T08:01:52.282Z",
+          "sourceUrl": "https://www.qidian.com/rank/retention/"
+        },
+        "mostFollowed": {
+          "label": "Most Followed",
+          "chineseLabel": "追读榜",
+          "snapshotPolicy": "initial-baseline",
+          "capturedAt": "2026-09-17T08:01:54.561Z",
+          "sourceUrl": "https://www.qidian.com/rank/followReading/"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore Qidian rankings and their month-by-month history.">
+  <title>Novel Ranking · Qidian Ranking History</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="fallback-data.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Novel Ranking home"><span class="brand-mark">排行</span><strong>Novel Ranking</strong></a>
+    <nav class="primary-nav" aria-label="Ranking sources"><a class="active" href="#history">Qidian Ranking</a></nav>
+  </header>
+  <main>
+    <section class="archive" id="history" aria-label="Ranking history">
+      <div class="month-shell">
+        <button class="month-arrow" id="month-prev" type="button" aria-label="Previous month">←</button>
+        <div class="months" id="months" role="tablist" aria-label="Select month"></div>
+        <button class="month-arrow" id="month-next" type="button" aria-label="Next month">→</button>
+      </div>
+      <p class="data-status" id="data-status" role="status">Loading ranking archive…</p>
+      <div id="ranking-grid" class="ranking-grid" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer><span>Novel Ranking · Unofficial Qidian ranking archive</span><span>Source: public rankings from Qidian.com</span></footer>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "novel-ranking",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test --test-isolation=none",
+    "collect:dry": "node scripts/fetch-qidian-monthly.mjs --dry-run",
+    "collect:month": "node scripts/fetch-qidian-monthly.mjs --publish"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "playwright": "1.63.0"
+  }
+}
