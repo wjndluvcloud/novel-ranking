@@ -1,0 +1,117 @@
+name: Collect monthly rankings
+
+on:
+  schedule:
+    # 23:40 Asia/Shanghai (UTC+8) on days that can be month end (Qidian only).
+    - cron: '40 15 28-31 * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Which source(s) to collect
+        required: true
+        type: choice
+        options:
+          - all
+          - qidian
+          - jinjiang
+          - zongheng
+          - tomato
+        default: all
+      dry_run:
+        description: Validate the live charts without publishing archive data
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-archive
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+      dry: ${{ steps.set.outputs.dry }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo 'matrix=["qidian","jinjiang","zongheng","tomato"]' >> "$GITHUB_OUTPUT"
+            echo 'dry=false' >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.source }}" = "all" ]; then
+            echo 'matrix=["qidian","jinjiang","zongheng","tomato"]' >> "$GITHUB_OUTPUT"
+            echo 'dry=${{ inputs.dry_run }}' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=["${{ inputs.source }}"]' >> "$GITHUB_OUTPUT"
+            echo 'dry=${{ inputs.dry_run }}' >> "$GITHUB_OUTPUT"
+          fi
+
+  collect:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        source: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      RUN_DRY: ${{ needs.plan.outputs.dry }}
+      SOURCE: ${{ matrix.source }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run parser and archive tests
+        run: npm test
+
+      - name: Collect rankings
+        run: |
+          MONTH_END=""
+          if [ "${{ github.event_name }}" = "schedule" ]; then MONTH_END="--only-month-end"; fi
+          if [ "$SOURCE" = "qidian" ]; then
+            if [ "$RUN_DRY" = "true" ]; then
+              npm run collect:dry
+            else
+              npm run collect:month
+            fi
+          else
+            if [ "$RUN_DRY" = "true" ]; then
+              node scripts/fetch-source-monthly.mjs "$SOURCE"
+            else
+              node scripts/fetch-source-monthly.mjs "$SOURCE" --publish --data-directory "data/$SOURCE" $MONTH_END
+            fi
+          fi
+
+      - name: Commit a new monthly archive
+        if: ${{ needs.plan.outputs.dry != 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "data/${SOURCE}/monthly" "data/${SOURCE}/manifest.json"
+          if git diff --cached --quiet; then
+            echo "No new monthly archive to commit for ${SOURCE}."
+            exit 0
+          fi
+          git commit -m "data: add ${SOURCE} monthly archive"
+          git pull --rebase origin main
+          git push origin HEAD:main
