@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": "jinjiang",
+  "periods": [
+    {
+      "period": "2026-08",
+      "file": "monthly/2026-08.json",
+      "generatedAt": "2026-09-18T16:33:27.228Z",
+      "rankings": {
+        "totalScore": {
+          "label": "Total Score",
+          "chineseLabel": "总分榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T16:33:18.820Z",
+          "sourceUrl": "https://www.jjwxc.net/topten.php?orderstr=7&t=0"
+        },
+        "monthly": {
+          "label": "Monthly",
+          "chineseLabel": "月度榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T16:33:18.820Z",
+          "sourceUrl": "https://www.jjwxc.net/topten.php?orderstr=4&t=0"
+        },
+        "quarterly": {
+          "label": "Quarterly",
+          "chineseLabel": "季度榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T16:33:18.820Z",
+          "sourceUrl": "https://www.jjwxc.net/topten.php?orderstr=5&t=0"
+        },
+        "wordCount": {
+          "label": "Word Count",
+          "chineseLabel": "字数榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T16:33:18.820Z",
+          "sourceUrl": "https://www.jjwxc.net/topten.php?orderstr=8&t=0"
+        }
+      }
+    }
+  ]
+}

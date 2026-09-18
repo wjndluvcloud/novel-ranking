@@ -8,8 +8,11 @@
   },
   "scripts": {
     "test": "node --test --test-isolation=none",
-    "collect:dry": "node scripts/fetch-qidian-monthly.mjs --dry-run",
-    "collect:month": "node scripts/fetch-qidian-monthly.mjs --publish"
+    "collect:dry": "node scripts/fetch-qidian-monthly.mjs --dry-run --data-directory data/qidian",
+    "collect:month": "node scripts/fetch-qidian-monthly.mjs --publish --data-directory data/qidian",
+    "collect:jinjiang": "node --use-system-ca scripts/fetch-source-monthly.mjs jinjiang --publish --data-directory data/jinjiang",
+    "collect:zongheng": "node scripts/fetch-source-monthly.mjs zongheng --publish --data-directory data/zongheng",
+    "collect:tomato": "node scripts/fetch-source-monthly.mjs tomato --publish --data-directory data/tomato"
   },
   "dependencies": {
     "cheerio": "1.2.0",

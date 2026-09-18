@@ -3,10 +3,15 @@ const months = document.querySelector('#months');
 const status = document.querySelector('#data-status');
 const previousButton = document.querySelector('#month-prev');
 const nextButton = document.querySelector('#month-next');
+const sourceTabs = document.querySelectorAll('.source-tab');
 
-const rankingOrder = ['monthlyTickets', 'bestSellers', 'readerRetention', 'mostFollowed'];
+const sources = window.RANKING_SOURCES ?? [];
 const fallbackSnapshot = window.QIDIAN_FALLBACK_SNAPSHOT;
 const genreLabel = window.qidianGenreLabel ?? ((category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
+
+let activeSourceConfig = sources[0] ?? null;
+let rankingOrder = activeSourceConfig?.charts.map(chart => chart.key) ?? [];
+const archiveCache = new Map();
 
 let archive = null;
 let activePeriod = null;
@@ -45,18 +50,18 @@ async function fetchJson(url) {
   return response.json();
 }
 
-function validateManifest(manifest) {
-  if (manifest?.schemaVersion !== 1 || manifest?.source !== 'qidian' || !Array.isArray(manifest.periods) || !manifest.periods.length) {
+function validateManifest(manifest, sourceId) {
+  if (manifest?.schemaVersion !== 1 || manifest?.source !== sourceId || !Array.isArray(manifest.periods) || !manifest.periods.length) {
     throw new Error('The ranking manifest is unavailable or invalid.');
   }
   return manifest;
 }
 
-function validateSnapshot(snapshot) {
-  if (snapshot?.schemaVersion !== 1 || snapshot?.source !== 'qidian' || !snapshot?.rankings) {
+function validateSnapshot(snapshot, sourceId = activeSourceConfig?.id, chartKeys = rankingOrder) {
+  if (snapshot?.schemaVersion !== 1 || snapshot?.source !== sourceId || !snapshot?.rankings) {
     throw new Error('The selected ranking archive is invalid.');
   }
-  for (const key of rankingOrder) {
+  for (const key of chartKeys) {
     const ranking = snapshot.rankings[key];
     if (!ranking || !Array.isArray(ranking.entries) || ranking.entries.length !== 20) {
       throw new Error(`The ${key} archive is incomplete.`);
@@ -119,7 +124,7 @@ function createCard(ranking, priorSnapshot) {
   source.href = ranking.sourceUrl;
   source.target = '_blank';
   source.rel = 'noreferrer';
-  source.setAttribute('aria-label', `View ${ranking.label} on Qidian`);
+  source.setAttribute('aria-label', `View ${ranking.label} on ${activeSourceConfig?.name ?? 'source'}`);
   header.append(heading, source);
 
   const list = createElement('ol', 'rank-list');
@@ -160,7 +165,7 @@ async function priorSnapshotFor(period) {
   const prior = archive.periods[index + 1];
   if (!prior) return null;
   try {
-    return validateSnapshot(await fetchJson(`data/${prior.file}`));
+    return validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${prior.file}`));
   } catch {
     return null;
   }
@@ -176,41 +181,88 @@ async function selectPeriod(period) {
   setStatus(`Loading ${monthLabel(period)}…`);
   try {
     const entry = archive.periods.find(candidate => candidate.period === period);
-    activeSnapshot = validateSnapshot(await fetchJson(`data/${entry.file}`));
+    activeSnapshot = validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${entry.file}`));
     activePeriod = period;
     showingFallback = false;
     renderMonths();
     await renderSnapshot(activeSnapshot);
-    setStatus(`${monthLabel(period)} archive · ${activeSnapshot.rankings.monthlyTickets.entries.length} records per chart`, 'ready');
+    const perChart = activeSnapshot.rankings[rankingOrder[0]].entries.length;
+    setStatus(`${monthLabel(period)} archive · ${perChart} records per chart`, 'ready');
   } catch (error) {
     if (activeSnapshot) {
       setStatus(`Could not load ${monthLabel(period)}. Showing the last available archive.`, 'warning');
       return;
     }
-    showFallback(`Archive unavailable. Showing the verified fallback capture. (${error.message})`);
+    handleLoadFailure(error);
   }
 }
 
 function showFallback(message) {
   showingFallback = true;
   archive = null;
-  activeSnapshot = validateSnapshot(fallbackSnapshot);
+  activeSnapshot = validateSnapshot(fallbackSnapshot, 'qidian', activeSourceConfig.charts.map(chart => chart.key));
   activePeriod = activeSnapshot.period;
   renderMonths();
   renderSnapshot(activeSnapshot);
   setStatus(message, 'warning');
 }
 
-async function initialise() {
+function handleLoadFailure(error) {
+  if (activeSourceConfig?.id === 'qidian' && fallbackSnapshot) {
+    showFallback(`Archive unavailable. Showing the verified fallback capture. (${error.message})`);
+    return;
+  }
+  archive = null;
+  activeSnapshot = null;
+  activePeriod = null;
+  grid.replaceChildren();
+  months.replaceChildren();
+  previousButton.disabled = true;
+  nextButton.disabled = true;
+  setStatus(`${activeSourceConfig?.name ?? 'This source'} ranking is unavailable right now. (${error.message})`, 'warning');
+}
+
+function updateSourceTabs() {
+  sourceTabs.forEach(tab => {
+    const isActive = tab.dataset.source === activeSourceConfig?.id;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+  document.title = `Ranking · ${activeSourceConfig?.name ?? 'Novel'} Ranking History`;
+}
+
+async function activateSource(sourceId) {
+  const config = sources.find(source => source.id === sourceId) ?? sources[0];
+  if (!config) return;
+  activeSourceConfig = config;
+  rankingOrder = config.charts.map(chart => chart.key);
+  activeSnapshot = null;
+  archive = null;
+  showingFallback = false;
+  updateSourceTabs();
+  setStatus(`Loading ${config.name} ranking…`);
   try {
-    archive = validateManifest(await fetchJson('data/manifest.json'));
+    if (!archiveCache.has(config.id)) {
+      archiveCache.set(config.id, validateManifest(await fetchJson(`${config.dataDir}/manifest.json`), config.id));
+    }
+    archive = archiveCache.get(config.id);
     activePeriod = archive.periods[0].period;
     renderMonths();
     await selectPeriod(activePeriod);
   } catch (error) {
-    showFallback(`Archive unavailable. Showing the verified fallback capture. (${error.message})`);
+    handleLoadFailure(error);
   }
 }
+
+async function initialise() {
+  await activateSource(sources[0]?.id ?? 'qidian');
+}
+
+sourceTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    activateSource(tab.dataset.source);
+  });
+});
 
 async function copyText(value) {
   if (navigator.clipboard && window.isSecureContext) {

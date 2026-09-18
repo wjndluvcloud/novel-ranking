@@ -7,13 +7,19 @@
   <title>Novel Ranking · Qidian Ranking History</title>
   <link rel="stylesheet" href="styles.css">
   <script src="fallback-data.js"></script>
+  <script src="sources-config.js"></script>
   <script src="category-labels.js"></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="#" aria-label="Novel Ranking home"><span class="brand-mark">排行</span><strong>Novel Ranking</strong></a>
-    <nav class="primary-nav" aria-label="Ranking sources"><a class="active" href="#history">Qidian Ranking</a></nav>
+    <a class="brand" href="#" aria-label="Ranking home"><span class="brand-mark">排行</span><strong>Ranking</strong></a>
+    <nav class="primary-nav" aria-label="Ranking sources">
+      <button class="source-tab active" type="button" data-source="qidian" aria-selected="true">Qidian Ranking</button>
+      <button class="source-tab" type="button" data-source="jinjiang" aria-selected="false">Jinjiang Ranking</button>
+      <button class="source-tab" type="button" data-source="zongheng" aria-selected="false">Zongheng Ranking</button>
+      <button class="source-tab" type="button" data-source="tomato" aria-selected="false">Tomato Novel Ranking</button>
+    </nav>
   </header>
   <main>
     <section class="archive" id="history" aria-label="Ranking history">
