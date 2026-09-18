@@ -157,6 +157,7 @@ export const SOURCE_FETCHERS = Object.freeze({
     name: 'Tomato Novel',
     homeUrl: 'https://fanqienovel.com/',
     transport: 'browser',
+    readySelector: '.book-item-text',
     parse: parseTomato,
     charts: [
       { key: 'ancientRomance', label: 'Ancient Romance', chineseLabel: '古风世情', metricLabel: '在读', url: 'https://fanqienovel.com/rank/0_2_1139' },
@@ -170,6 +171,7 @@ export const SOURCE_FETCHERS = Object.freeze({
     name: 'Zongheng',
     homeUrl: 'https://www.zongheng.com/',
     transport: 'browser',
+    readySelector: '.rank-modules-works--main-item',
     parse: parseZongheng,
     charts: [
       // Zongheng retired /rank/details.html. These Nuxt routes identify each chart.

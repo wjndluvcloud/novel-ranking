@@ -149,14 +149,19 @@ async function collectBrowser(fetcher, capturedAt, options) {
   try {
     for (const chart of fetcher.charts) {
       console.log(`Collecting ${fetcher.name} · ${chart.label} from ${chart.url}`);
-      await page.goto(chart.url, { waitUntil: 'networkidle', timeout: 60_000 });
-      // Trigger lazy-loaded rank rows by scrolling to the bottom a few times.
-      for (let step = 0; step < 6; step += 1) {
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(700);
-      }
-      const html = await page.content();
       try {
+        // Analytics and ad requests can keep these sites perpetually non-idle
+        // in CI. DOM readiness plus the source's row selector is deterministic.
+        await page.goto(chart.url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+        if (fetcher.readySelector) {
+          await page.waitForSelector(fetcher.readySelector, { timeout: 45_000 });
+        }
+        // Trigger lazy-loaded rank rows by scrolling to the bottom a few times.
+        for (let step = 0; step < 6; step += 1) {
+          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+          await page.waitForTimeout(700);
+        }
+        const html = await page.content();
         let entries = fetcher.parse(html, chart);
         if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
         rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt);
@@ -165,6 +170,7 @@ async function collectBrowser(fetcher, capturedAt, options) {
         await mkdir(diagnosticDirectory, { recursive: true });
         const stem = `${chart.key}-${Date.now()}`;
         const htmlPath = path.join(diagnosticDirectory, `${stem}.html`);
+        const html = await page.content().catch(() => '');
         await writeFile(htmlPath, html, 'utf8');
         await page.screenshot({ path: path.join(diagnosticDirectory, `${stem}.png`), fullPage: true }).catch(() => {});
         console.error(`Saved failed-page diagnostics to ${htmlPath}`);
