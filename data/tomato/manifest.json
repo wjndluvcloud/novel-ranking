@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": "tomato",
+  "periods": [
+    {
+      "period": "2026-08",
+      "file": "monthly/2026-08.json",
+      "generatedAt": "2026-09-18T17:50:28.021Z",
+      "rankings": {
+        "ancientRomance": {
+          "label": "Ancient Romance",
+          "chineseLabel": "古风世情",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:49:37.395Z",
+          "sourceUrl": "https://fanqienovel.com/rank/0_2_1139"
+        },
+        "fantasyRomance": {
+          "label": "Fantasy Romance",
+          "chineseLabel": "玄幻言情",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:49:37.395Z",
+          "sourceUrl": "https://fanqienovel.com/rank/0_2_248"
+        },
+        "scifiApocalypse": {
+          "label": "Sci-Fi & Apocalypse",
+          "chineseLabel": "科幻末世",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:49:37.395Z",
+          "sourceUrl": "https://fanqienovel.com/rank/0_2_8"
+        },
+        "ceoRomance": {
+          "label": "CEO Romance",
+          "chineseLabel": "豪门总裁",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:49:37.395Z",
+          "sourceUrl": "https://fanqienovel.com/rank/0_2_748"
+        }
+      }
+    }
+  ]
+}

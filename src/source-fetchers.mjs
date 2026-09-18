@@ -60,9 +60,10 @@ function parseJinjiang(html, chart) {
 // Tomato / Fanqie: https://fanqienovel.com/rank/<gender>_<board>_<category>
 // The list is client-rendered (only ~10 of 20 items are in the raw HTML), so the
 // runner renders it with Playwright and this parser reads the hydrated DOM.
-function parseTomato(html, chart) {
+export function parseTomato(html, chart) {
   const $ = cheerio.load(html);
   const entries = [];
+  const seenBookIds = new Set();
   $('.book-item-text').each((_, node) => {
     if (entries.length === 20) return;
     const item = $(node);
@@ -71,7 +72,9 @@ function parseTomato(html, chart) {
     const href = titleLink.attr('href') ?? '';
     const id = href.match(/\/page\/(\d+)/u)?.[1];
     const author = clean(item.find('.author a').first().text());
-    if (!title || !author || !id) return;
+    if (!title || !author || !id || seenBookIds.has(id)) return;
+    // Fanqie can repeat a book when its virtual list re-renders during scroll.
+    seenBookIds.add(id);
     entries.push({
       rank: entries.length + 1,
       bookId: `tomato-${id}`,
@@ -89,18 +92,32 @@ function parseTomato(html, chart) {
   return entries;
 }
 
+// Ranking rows use a font-obfuscated private-use character set. Individual
+// book pages are server-rendered and expose the canonical Unicode title and
+// author, so the collector uses this parser to de-obfuscate the archive.
+export function parseTomatoBookPage(html) {
+  const $ = cheerio.load(html);
+  const title = clean($('.info-name h1').first().text());
+  const author = clean($('.author-name-text').first().text());
+  if (!title || !author) return null;
+  return { title, author };
+}
+
 // Zongheng: rank pages sit behind a WAF gateway, so a real browser is required.
 // The runner uses Playwright for this source; the parser reads the rendered DOM.
-function parseZongheng(html, chart) {
+export function parseZongheng(html, chart) {
   const $ = cheerio.load(html);
   const entries = [];
-  $('.rank_d_list, .rank-list li, .bookLi, li').each((_, node) => {
+  $('.rank-modules-works--main-item, .rank_d_list, .rank-list li, .bookLi').each((_, node) => {
     if (entries.length === 20) return;
     const item = $(node);
-    const titleLink = item.find('a[href*="/book/"], a[href*="/detail/"]').first();
+    // Current Nuxt rank pages put a cover link before the titled detail link.
+    const titleLink = item.find('.rank-modules-works--main-item-title').first().length
+      ? item.find('.rank-modules-works--main-item-title').first()
+      : item.find('a[href*="/book/"], a[href*="/detail/"]').first();
     const title = clean(titleLink.text());
     if (!title) return;
-    const author = clean(item.find('a[href*="/author"], .author').first().text());
+    const author = clean(item.find('.rank-modules-works--main-item-author a, a[href*="/author"], .author').first().text());
     if (!author) return;
     const href = titleLink.attr('href') ?? '';
     const id = href.match(/(\d{4,})/u)?.[1] ?? `${chart.key}-${entries.length + 1}`;
@@ -155,10 +172,11 @@ export const SOURCE_FETCHERS = Object.freeze({
     transport: 'browser',
     parse: parseZongheng,
     charts: [
-      { key: 'clicks', label: 'Most Read', chineseLabel: '点击榜', metricLabel: '点击', url: 'https://www.zongheng.com/rank/details.html?rt=0&d=1&p=1' },
-      { key: 'monthlyTickets', label: 'Monthly Tickets', chineseLabel: '月票榜', metricLabel: '月票', url: 'https://www.zongheng.com/rank/details.html?rt=3&d=1&p=1' },
-      { key: 'rewards', label: 'Rewards', chineseLabel: '打赏榜', metricLabel: '打赏', url: 'https://www.zongheng.com/rank/details.html?rt=4&d=1&p=1' },
-      { key: 'newBooks', label: 'New Books', chineseLabel: '新书榜', metricLabel: '人气', url: 'https://www.zongheng.com/rank/details.html?rt=5&d=1&p=1' }
+      // Zongheng retired /rank/details.html. These Nuxt routes identify each chart.
+      { key: 'clicks', label: 'Most Read', chineseLabel: '点击榜', metricLabel: '点击', url: 'https://www.zongheng.com/rank?nav=click&rankType=5' },
+      { key: 'monthlyTickets', label: 'Monthly Tickets', chineseLabel: '月票榜', metricLabel: '月票', url: 'https://www.zongheng.com/rank?nav=monthly-ticket&rankType=1' },
+      { key: 'rewards', label: 'Rewards', chineseLabel: '打赏榜', metricLabel: '打赏', url: 'https://www.zongheng.com/rank?nav=claque&rankType=7' },
+      { key: 'newBooks', label: 'New Books', chineseLabel: '新书榜', metricLabel: '人气', url: 'https://www.zongheng.com/rank?nav=new-book&rankType=4' }
     ]
   }
 });

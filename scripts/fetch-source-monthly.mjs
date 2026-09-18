@@ -5,14 +5,14 @@
 //
 // --only-month-end skips publishing unless today is the last calendar day in
 // Asia/Shanghai (used by the scheduled workflow so a month gets one archive).
-// HTTP sources (Jinjiang, Tomato) are fetched directly; browser sources
-// (Zongheng, behind a WAF) are rendered with Playwright, mirroring the Qidian
-// collector. Run with `node --use-system-ca` behind a corporate TLS proxy.
+// Jinjiang is fetched directly. Tomato and Zongheng are rendered with
+// Playwright; the latter can return an anti-bot response. Run with
+// `node --use-system-ca` behind a corporate TLS proxy.
 import { existsSync } from 'node:fs';
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { SOURCE_FETCHERS } from '../src/source-fetchers.mjs';
+import { parseTomatoBookPage, SOURCE_FETCHERS } from '../src/source-fetchers.mjs';
 import { publishSourceSnapshot, validateRanking } from '../src/source-archive.mjs';
 
 const DEFAULT_EDGE_PATHS = [
@@ -26,6 +26,7 @@ function parseArguments(argv) {
   const options = {
     sourceId: null, dryRun: false, publish: false, output: null,
     dataDirectory: null, period: null, headed: false, onlyMonthEnd: false,
+    diagnosticsDirectory: '.tmp/collector-diagnostics',
     browserPath: process.env.RANKING_BROWSER_PATH || null
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -38,6 +39,7 @@ function parseArguments(argv) {
     else if (argument === '--data-directory') options.dataDirectory = argv[++index];
     else if (argument === '--period') options.period = argv[++index];
     else if (argument === '--browser-path') options.browserPath = argv[++index];
+    else if (argument === '--diagnostics-directory') options.diagnosticsDirectory = argv[++index];
     else if (!argument.startsWith('--') && !options.sourceId) options.sourceId = argument;
     else throw new Error(`Unknown argument: ${argument}`);
   }
@@ -102,6 +104,36 @@ async function collectHttp(fetcher, capturedAt) {
   return rankings;
 }
 
+function containsPrivateUseCharacters(value) {
+  return /\p{Private_Use}/u.test(value ?? '');
+}
+
+async function mapWithConcurrency(items, limit, callback) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await callback(items[index]);
+    }
+  }));
+  return results;
+}
+
+async function canonicalizeTomatoEntries(entries) {
+  return mapWithConcurrency(entries, 4, async entry => {
+    if (!containsPrivateUseCharacters(entry.title) && !containsPrivateUseCharacters(entry.author)) return entry;
+    const response = await fetch(entry.bookUrl, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'zh-CN,zh;q=0.9' } });
+    if (!response.ok) throw new Error(`Could not resolve Tomato metadata for ${entry.bookId}: HTTP ${response.status}`);
+    const metadata = parseTomatoBookPage(await response.text());
+    if (!metadata || containsPrivateUseCharacters(metadata.title) || containsPrivateUseCharacters(metadata.author)) {
+      throw new Error(`Could not resolve canonical Tomato metadata for ${entry.bookId}.`);
+    }
+    return { ...entry, ...metadata };
+  });
+}
+
 async function collectBrowser(fetcher, capturedAt, options) {
   const { chromium } = await import('playwright');
   const executablePath = resolveBrowserPath(options.browserPath);
@@ -124,8 +156,20 @@ async function collectBrowser(fetcher, capturedAt, options) {
         await page.waitForTimeout(700);
       }
       const html = await page.content();
-      const entries = fetcher.parse(html, chart);
-      rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt);
+      try {
+        let entries = fetcher.parse(html, chart);
+        if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
+        rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt);
+      } catch (error) {
+        const diagnosticDirectory = path.resolve(options.diagnosticsDirectory, fetcher.id);
+        await mkdir(diagnosticDirectory, { recursive: true });
+        const stem = `${chart.key}-${Date.now()}`;
+        const htmlPath = path.join(diagnosticDirectory, `${stem}.html`);
+        await writeFile(htmlPath, html, 'utf8');
+        await page.screenshot({ path: path.join(diagnosticDirectory, `${stem}.png`), fullPage: true }).catch(() => {});
+        console.error(`Saved failed-page diagnostics to ${htmlPath}`);
+        throw error;
+      }
       await page.waitForTimeout(1_200);
     }
   } finally {

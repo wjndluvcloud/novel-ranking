@@ -7,7 +7,7 @@ const sourceTabs = document.querySelectorAll('.source-tab');
 
 const sources = window.RANKING_SOURCES ?? [];
 const fallbackSnapshot = window.QIDIAN_FALLBACK_SNAPSHOT;
-const genreLabel = window.qidianGenreLabel ?? ((category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
+const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
 
 let activeSourceConfig = sources[0] ?? null;
 let rankingOrder = activeSourceConfig?.charts.map(chart => chart.key) ?? [];
@@ -97,9 +97,8 @@ function createRankItem(entry, ranking, priorSnapshot) {
   const item = createElement('li', 'rank-item');
   item.append(createElement('span', 'position', String(entry.rank)));
   const info = createElement('span', 'book-info');
-  const genre = genreLabel(entry.category, entry.subcategory);
+  const genre = genreLabel(activeSourceConfig?.id, entry.category, entry.subcategory);
   info.dataset.tooltip = `Genre: ${genre}`;
-  info.title = `Genre: ${genre}\nSource: ${[entry.category, entry.subcategory].filter(Boolean).join(' · ')}`;
   info.append(createElement('span', 'book-name', entry.title));
   info.append(createElement('small', 'book-author', entry.author));
   item.append(info, movementFor(entry, ranking, priorSnapshot));

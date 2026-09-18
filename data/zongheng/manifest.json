@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": "zongheng",
+  "periods": [
+    {
+      "period": "2026-08",
+      "file": "monthly/2026-08.json",
+      "generatedAt": "2026-09-18T17:44:58.690Z",
+      "rankings": {
+        "clicks": {
+          "label": "Most Read",
+          "chineseLabel": "点击榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:42:57.621Z",
+          "sourceUrl": "https://www.zongheng.com/rank?nav=click&rankType=5"
+        },
+        "monthlyTickets": {
+          "label": "Monthly Tickets",
+          "chineseLabel": "月票榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:42:57.621Z",
+          "sourceUrl": "https://www.zongheng.com/rank?nav=monthly-ticket&rankType=1"
+        },
+        "rewards": {
+          "label": "Rewards",
+          "chineseLabel": "打赏榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:42:57.621Z",
+          "sourceUrl": "https://www.zongheng.com/rank?nav=claque&rankType=7"
+        },
+        "newBooks": {
+          "label": "New Books",
+          "chineseLabel": "新书榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-18T17:42:57.621Z",
+          "sourceUrl": "https://www.zongheng.com/rank?nav=new-book&rankType=4"
+        }
+      }
+    }
+  ]
+}
