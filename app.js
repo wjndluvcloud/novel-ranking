@@ -4,6 +4,8 @@ const status = document.querySelector('#data-status');
 const previousButton = document.querySelector('#month-prev');
 const nextButton = document.querySelector('#month-next');
 const sourceTabs = document.querySelectorAll('.source-tab');
+const footerArchive = document.querySelector('#footer-archive');
+const footerSource = document.querySelector('#footer-source');
 
 const sources = window.RANKING_SOURCES ?? [];
 const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
@@ -217,6 +219,11 @@ function updateSourceTabs() {
     tab.setAttribute('aria-selected', String(isActive));
   });
   document.title = `Ranking · ${activeSourceConfig?.name ?? 'Novel'} Ranking History`;
+  const sourceName = activeSourceConfig?.name ?? 'Novel';
+  footerArchive.textContent = `Novel Ranking · Unofficial ${sourceName} ranking archive`;
+  footerSource.textContent = `Source: public rankings from ${sourceName}`;
+  footerSource.href = activeSourceConfig?.homeUrl ?? '#';
+  footerSource.setAttribute('aria-label', `Visit ${sourceName}`);
 }
 
 async function activateSource(sourceId) {
