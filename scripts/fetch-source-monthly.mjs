@@ -99,6 +99,7 @@ async function collectHttp(fetcher, capturedAt, period) {
     if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
     const buffer = Buffer.from(await response.arrayBuffer());
     const html = decodeBody(buffer, response.headers.get('content-type'));
+    assertNoChallenge(fetcher, html);
     const entries = fetcher.parse(html, chart);
     rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt, url);
   }
@@ -107,6 +108,13 @@ async function collectHttp(fetcher, capturedAt, period) {
 
 function containsPrivateUseCharacters(value) {
   return /\p{Private_Use}/u.test(value ?? '');
+}
+
+// Per-source anti-bot detection: throws before parsing if the page is a
+// challenge/WAF response rather than a ranking page.
+function assertNoChallenge(fetcher, html) {
+  const challenge = fetcher.detectChallenge?.(html);
+  if (challenge) throw new Error(`${fetcher.name} returned an anti-bot page: ${challenge}`);
 }
 
 async function mapWithConcurrency(items, limit, callback) {
@@ -172,6 +180,7 @@ async function collectBrowser(fetcher, capturedAt, options, period) {
             await page.waitForTimeout(700);
           }
           const html = await page.content();
+          assertNoChallenge(fetcher, html);
           let entries = fetcher.parse(html, chart);
           if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
           rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt, url);

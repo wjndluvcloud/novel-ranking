@@ -78,13 +78,13 @@ is generated from / mirrors the display subset for the browser.
 - [x] Migrated the archive test to `tests/source-archive.test.mjs`; tests 16/16 green.
 - Note: strict validation + challenge detection were moved with Qidian (covers plan #3/#6 for Qidian).
 
-### Phase 3 — Move strictness + anti-bot into plugins (#3, #6)
-- [ ] Add an optional `validate(entry)` hook; port Qidian's `qidian.com/book/<id>` URL check
-      (`src/qidian-validator.mjs`) into `src/sources/qidian.mjs`.
-- [ ] Add an optional `detectChallenge(html)` hook; move `detectQidianChallenge` into the
-      Qidian plugin; let the runner call it generically before parsing.
-- [ ] Keep the generic `validateRanking` (20 entries, unique ranks/ids, title+author) as the
-      baseline every source must pass.
+### Phase 3 — Move strictness + anti-bot into plugins (#3, #6) — DONE
+- [x] Optional `validate(ranking)` hook exposing Qidian's strict `qidian.com/book/<id>` check
+      via the plugin (wired in Phase 2).
+- [x] Optional `detectChallenge(html)` hook; Qidian exposes `detectQidianChallenge`; the runner
+      calls it generically before parsing in both transports (`assertNoChallenge`).
+- [x] Generic `validateRanking` (20 entries, unique ranks/ids, title+author) stays the baseline
+      every source must pass. Tests 16/16 green.
 
 ### Phase 4 — De-Qidian the client (#1)
 - [ ] Add optional `fallbackGlobal` per source in the registry; `handleLoadFailure` uses

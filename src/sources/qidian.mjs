@@ -2,7 +2,7 @@
 // Reuses Qidian's dedicated parser/validator/sources as this plugin's internals,
 // so the strict challenge detection and book-URL validation are preserved while
 // Qidian runs through the generic collector like every other source.
-import { parseQidianRanking, QIDIAN_SELECTORS } from '../qidian-parser.mjs';
+import { detectQidianChallenge, parseQidianRanking, QIDIAN_SELECTORS } from '../qidian-parser.mjs';
 import { validateQidianRanking } from '../qidian-validator.mjs';
 import { officialMonthlyTicketsUrl, QIDIAN_SOURCES } from '../qidian-sources.mjs';
 
@@ -27,6 +27,7 @@ export default Object.freeze({
   attempts: 3,
   restrictToCurrentPeriod: true,
   parse: (html, chart) => parseQidianRanking(html, chart).entries,
+  detectChallenge: detectQidianChallenge,
   validate: ranking => validateQidianRanking(ranking),
   // Monthly Tickets has official per-period pages; the other charts are current-only.
   resolveChartUrl: (chart, period) => (chart.key === 'monthlyTickets' ? officialMonthlyTicketsUrl(period) : chart.url),
