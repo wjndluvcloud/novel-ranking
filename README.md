@@ -18,8 +18,6 @@ Sources and their charts are declared in `sources-config.js`, which the browser 
 | Zongheng | Playwright | Rank pages sit behind a WAF gateway; a real browser is required. |
 | Faloo | HTTP + cheerio | Server-rendered GB2312 monthly ranking pages. |
 
-Behind a corporate TLS proxy, run the HTTP collector with `node --use-system-ca` (already set in the `collect:*` scripts). Browser-based collectors (Qidian, Tomato, Zongheng) need Chromium via `npx playwright install chromium`, which may be blocked by the same proxy locally — run those in CI where the network is open.
-
 ## Collector development
 
 Install Node.js 24 LTS and the locked dependencies:
