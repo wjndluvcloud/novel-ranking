@@ -49,6 +49,7 @@ export default Object.freeze({
   label: 'Jinjiang Ranking',
   homeUrl: 'https://www.jjwxc.net/',
   dataDir: 'data/jinjiang',
+  bookUrl: { host: 'jjwxc.net' },
   transport: 'http',
   parse: parseJinjiang,
   charts: [

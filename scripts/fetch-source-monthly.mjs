@@ -14,7 +14,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
-import { publishSourceSnapshot, validateRanking } from '../src/source-archive.mjs';
+import { publishSourceSnapshot, validateRanking, assertBookUrls } from '../src/source-archive.mjs';
 
 const DEFAULT_EDGE_PATHS = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -219,6 +219,7 @@ function buildRanking(fetcher, chart, entries, capturedAt, sourceUrl) {
     entries
   };
   validateRanking(ranking);
+  if (fetcher.bookUrl) assertBookUrls(ranking, fetcher.bookUrl, fetcher.id);
   fetcher.validate?.(ranking);
   console.log(`Validated ${entries.length} entries for ${chart.label}.`);
   return ranking;

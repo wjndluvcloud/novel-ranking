@@ -43,6 +43,7 @@ export default Object.freeze({
   label: 'Zongheng Ranking',
   homeUrl: 'https://www.zongheng.com/',
   dataDir: 'data/zongheng',
+  bookUrl: { host: 'zongheng.com' },
   transport: 'browser',
   readySelector: '.rank-modules-works--main-item',
   parse: parseZongheng,

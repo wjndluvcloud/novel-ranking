@@ -39,6 +39,7 @@ test('every fetch source exposes a valid collector contract', () => {
     }
     if (fetcher.readyCount !== undefined) assert.equal(typeof fetcher.readyCount, 'number', `${id}.readyCount`);
     if (fetcher.attempts !== undefined) assert.equal(typeof fetcher.attempts, 'number', `${id}.attempts`);
+    if (fetcher.bookUrl !== undefined) assert.equal(typeof fetcher.bookUrl.host, 'string', `${id}.bookUrl.host`);
   }
 });
 

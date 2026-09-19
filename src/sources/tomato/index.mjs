@@ -54,6 +54,7 @@ export default Object.freeze({
   label: 'Tomato Novel Ranking',
   homeUrl: 'https://fanqienovel.com/',
   dataDir: 'data/tomato',
+  bookUrl: { host: 'fanqienovel.com' },
   transport: 'browser',
   readySelector: '.book-item-text',
   parse: parseTomato,

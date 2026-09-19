@@ -5,7 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { officialMonthlyTicketsUrl, QIDIAN_SOURCES, sourceForPeriod } from '../src/sources/qidian/sources.mjs';
 import { detectQidianChallenge, parseQidianRanking, QidianParseError } from '../src/sources/qidian/parser.mjs';
-import { QidianValidationError, validateQidianRanking } from '../src/sources/qidian/validator.mjs';
+import { assertBookUrls, SourceArchiveError, validateRanking } from '../src/source-archive.mjs';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDirectory = path.join(testDirectory, 'fixtures', 'qidian');
@@ -17,7 +17,8 @@ async function fixture(source) {
 for (const source of QIDIAN_SOURCES) {
   test(`${source.label} fixture yields a validated Top 20`, async () => {
     const ranking = parseQidianRanking(await fixture(source), source);
-    assert.equal(validateQidianRanking(ranking), ranking);
+    assert.equal(validateRanking(ranking), ranking);
+    assertBookUrls(ranking, { host: 'qidian.com' }, 'qidian');
     assert.equal(ranking.entries.length, 20);
     assert.deepEqual(ranking.entries.map(entry => entry.rank), Array.from({ length: 20 }, (_, index) => index + 1));
     assert.equal(new Set(ranking.entries.map(entry => entry.bookId)).size, 20);
@@ -52,8 +53,8 @@ test('partial rankings cannot be published', async () => {
   const ranking = parseQidianRanking(await fixture(QIDIAN_SOURCES[0]), QIDIAN_SOURCES[0]);
   ranking.entries.pop();
   assert.throws(
-    () => validateQidianRanking(ranking),
-    error => error instanceof QidianValidationError && error.issues.some(issue => issue.includes('expected 20'))
+    () => validateRanking(ranking),
+    error => error instanceof SourceArchiveError && /expected 20/u.test(error.message)
   );
 });
 
@@ -61,8 +62,8 @@ test('duplicate book IDs cannot be published', async () => {
   const ranking = parseQidianRanking(await fixture(QIDIAN_SOURCES[0]), QIDIAN_SOURCES[0]);
   ranking.entries[19].bookId = ranking.entries[0].bookId;
   assert.throws(
-    () => validateQidianRanking(ranking),
-    error => error instanceof QidianValidationError && error.issues.includes('book IDs must be present and unique')
+    () => validateRanking(ranking),
+    error => error instanceof SourceArchiveError && error.message.includes('book IDs must be present and unique')
   );
 });
 
@@ -70,16 +71,16 @@ test('missing authors cannot be published', async () => {
   const ranking = parseQidianRanking(await fixture(QIDIAN_SOURCES[0]), QIDIAN_SOURCES[0]);
   ranking.entries[3].author = '';
   assert.throws(
-    () => validateQidianRanking(ranking),
-    error => error instanceof QidianValidationError && error.issues.some(issue => issue.includes('has no author'))
+    () => validateRanking(ranking),
+    error => error instanceof SourceArchiveError && /has no author/u.test(error.message)
   );
 });
 
-test('lookalike domains cannot pass Qidian book URL validation', async () => {
+test('lookalike domains cannot pass book URL validation', async () => {
   const ranking = parseQidianRanking(await fixture(QIDIAN_SOURCES[0]), QIDIAN_SOURCES[0]);
   ranking.entries[0].bookUrl = `https://notqidian.com/book/${ranking.entries[0].bookId}/`;
   assert.throws(
-    () => validateQidianRanking(ranking),
-    error => error instanceof QidianValidationError && error.issues.some(issue => issue.includes('invalid Qidian book URL'))
+    () => assertBookUrls(ranking, { host: 'qidian.com' }, 'qidian'),
+    error => error instanceof SourceArchiveError && error.code === 'BOOK_URL_INVALID'
   );
 });
