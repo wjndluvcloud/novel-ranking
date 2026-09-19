@@ -1,13 +1,13 @@
-// Generic monthly collector for the non-Qidian sources.
+// Generic monthly collector for every ranking source.
 // Usage: node scripts/fetch-source-monthly.mjs <sourceId> [--publish] [--dry-run]
 //        [--data-directory <dir>] [--period YYYY-MM] [--output <file>] [--headed]
 //        [--only-month-end]
 //
 // --only-month-end skips publishing unless today is the last calendar day in
 // Asia/Shanghai (used by the scheduled workflow so a month gets one archive).
-// Jinjiang is fetched directly. Tomato and Zongheng are rendered with
-// Playwright; the latter can return an anti-bot response. Run with
-// `node --use-system-ca` behind a corporate TLS proxy.
+// Jinjiang is fetched directly over HTTP. Qidian, Tomato and Zongheng are
+// rendered with Playwright; the latter two can return an anti-bot response.
+// Run with `node --use-system-ca` behind a corporate TLS proxy.
 import { existsSync } from 'node:fs';
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -43,7 +43,7 @@ function parseArguments(argv) {
     else if (!argument.startsWith('--') && !options.sourceId) options.sourceId = argument;
     else throw new Error(`Unknown argument: ${argument}`);
   }
-  if (!options.sourceId) throw new Error('A source id is required (jinjiang | zongheng | tomato).');
+  if (!options.sourceId) throw new Error('A source id is required (qidian | jinjiang | zongheng | tomato).');
   if (options.dryRun && options.publish) throw new Error('--dry-run cannot be used with --publish.');
   if (options.period && !/^\d{4}-(0[1-9]|1[0-2])$/u.test(options.period)) {
     throw new Error('--period must use YYYY-MM.');
@@ -90,16 +90,17 @@ function decodeBody(buffer, contentType) {
   return new TextDecoder('utf-8').decode(buffer);
 }
 
-async function collectHttp(fetcher, capturedAt) {
+async function collectHttp(fetcher, capturedAt, period) {
   const rankings = {};
   for (const chart of fetcher.charts) {
-    console.log(`Collecting ${fetcher.name} · ${chart.label} from ${chart.url}`);
-    const response = await fetch(chart.url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'zh-CN,zh;q=0.9' } });
-    if (!response.ok) throw new Error(`${chart.url} returned HTTP ${response.status}`);
+    const url = fetcher.resolveChartUrl ? fetcher.resolveChartUrl(chart, period) : chart.url;
+    console.log(`Collecting ${fetcher.name} · ${chart.label} from ${url}`);
+    const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'zh-CN,zh;q=0.9' } });
+    if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
     const buffer = Buffer.from(await response.arrayBuffer());
     const html = decodeBody(buffer, response.headers.get('content-type'));
     const entries = fetcher.parse(html, chart);
-    rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt);
+    rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt, url);
   }
   return rankings;
 }
@@ -134,7 +135,7 @@ async function canonicalizeTomatoEntries(entries) {
   });
 }
 
-async function collectBrowser(fetcher, capturedAt, options) {
+async function collectBrowser(fetcher, capturedAt, options, period) {
   const { chromium } = await import('playwright');
   const executablePath = resolveBrowserPath(options.browserPath);
   const browser = await chromium.launch({
@@ -145,36 +146,49 @@ async function collectBrowser(fetcher, capturedAt, options) {
   });
   const context = await browser.newContext({ locale: 'zh-CN', timezoneId: 'Asia/Shanghai', viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
+  const attempts = fetcher.attempts ?? 1;
   const rankings = {};
   try {
     for (const chart of fetcher.charts) {
-      console.log(`Collecting ${fetcher.name} · ${chart.label} from ${chart.url}`);
-      try {
-        // Analytics and ad requests can keep these sites perpetually non-idle
-        // in CI. DOM readiness plus the source's row selector is deterministic.
-        await page.goto(chart.url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-        if (fetcher.readySelector) {
-          await page.waitForSelector(fetcher.readySelector, { timeout: 45_000 });
+      const url = fetcher.resolveChartUrl ? fetcher.resolveChartUrl(chart, period) : chart.url;
+      console.log(`Collecting ${fetcher.name} · ${chart.label} from ${url}`);
+      for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        try {
+          // Analytics and ad requests can keep these sites perpetually non-idle
+          // in CI. DOM readiness plus the source's row selector is deterministic.
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+          if (fetcher.readyCount && fetcher.readySelector) {
+            await page.waitForFunction(
+              ({ selector, count }) => document.querySelectorAll(selector).length === count,
+              { selector: fetcher.readySelector, count: fetcher.readyCount },
+              { timeout: 60_000 }
+            );
+          } else if (fetcher.readySelector) {
+            await page.waitForSelector(fetcher.readySelector, { timeout: 45_000 });
+          }
+          // Trigger lazy-loaded rank rows by scrolling to the bottom a few times.
+          for (let step = 0; step < 6; step += 1) {
+            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await page.waitForTimeout(700);
+          }
+          const html = await page.content();
+          let entries = fetcher.parse(html, chart);
+          if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
+          rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt, url);
+          break;
+        } catch (error) {
+          const diagnosticDirectory = path.resolve(options.diagnosticsDirectory, fetcher.id);
+          await mkdir(diagnosticDirectory, { recursive: true });
+          const stem = `${chart.key}-${Date.now()}`;
+          const htmlPath = path.join(diagnosticDirectory, `${stem}.html`);
+          const html = await page.content().catch(() => '');
+          await writeFile(htmlPath, html, 'utf8');
+          await page.screenshot({ path: path.join(diagnosticDirectory, `${stem}.png`), fullPage: true }).catch(() => {});
+          console.error(`Saved failed-page diagnostics to ${htmlPath}`);
+          if (attempt === attempts) throw error;
+          console.warn(`${chart.label} attempt ${attempt}/${attempts} failed; retrying.`);
+          await page.waitForTimeout(2_000 * attempt);
         }
-        // Trigger lazy-loaded rank rows by scrolling to the bottom a few times.
-        for (let step = 0; step < 6; step += 1) {
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-          await page.waitForTimeout(700);
-        }
-        const html = await page.content();
-        let entries = fetcher.parse(html, chart);
-        if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
-        rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt);
-      } catch (error) {
-        const diagnosticDirectory = path.resolve(options.diagnosticsDirectory, fetcher.id);
-        await mkdir(diagnosticDirectory, { recursive: true });
-        const stem = `${chart.key}-${Date.now()}`;
-        const htmlPath = path.join(diagnosticDirectory, `${stem}.html`);
-        const html = await page.content().catch(() => '');
-        await writeFile(htmlPath, html, 'utf8');
-        await page.screenshot({ path: path.join(diagnosticDirectory, `${stem}.png`), fullPage: true }).catch(() => {});
-        console.error(`Saved failed-page diagnostics to ${htmlPath}`);
-        throw error;
       }
       await page.waitForTimeout(1_200);
     }
@@ -184,17 +198,18 @@ async function collectBrowser(fetcher, capturedAt, options) {
   return rankings;
 }
 
-function buildRanking(fetcher, chart, entries, capturedAt) {
+function buildRanking(fetcher, chart, entries, capturedAt, sourceUrl) {
   const ranking = {
     key: chart.key,
     label: chart.label,
     chineseLabel: chart.chineseLabel,
-    sourceUrl: chart.url,
-    snapshotPolicy: 'month-end',
+    sourceUrl: sourceUrl ?? chart.url,
+    snapshotPolicy: chart.snapshotPolicy ?? 'month-end',
     capturedAt,
     entries
   };
   validateRanking(ranking);
+  fetcher.validate?.(ranking);
   console.log(`Validated ${entries.length} entries for ${chart.label}.`);
   return ranking;
 }
@@ -207,13 +222,17 @@ async function main() {
     console.log('Skipping monthly publication: today is not the final calendar day in Asia/Shanghai.');
     return;
   }
-  const period = options.period ?? periodInShanghai();
+  const currentPeriod = periodInShanghai();
+  const period = options.period ?? currentPeriod;
+  if (fetcher.restrictToCurrentPeriod && period !== currentPeriod) {
+    throw new Error(`${fetcher.name} can only be captured for the current period (${currentPeriod}); its charts have no verified historical source.`);
+  }
   const dataDirectory = options.dataDirectory ?? path.join('data', fetcher.id);
   const capturedAt = new Date().toISOString();
 
   const rankings = fetcher.transport === 'browser'
-    ? await collectBrowser(fetcher, capturedAt, options)
-    : await collectHttp(fetcher, capturedAt);
+    ? await collectBrowser(fetcher, capturedAt, options, period)
+    : await collectHttp(fetcher, capturedAt, period);
 
   const snapshot = {
     schemaVersion: 1,

@@ -66,13 +66,17 @@ is generated from / mirrors the display subset for the browser.
       (`npm run build:config`); the registry is now the single source of truth.
 - [x] Tests remain green (16/16); browser config content unchanged.
 
-### Phase 2 — Fold Qidian into the generic pipeline (#2)
-- [ ] Register `qidian` in the plugin registry with `transport: 'browser'`, reusing
-      `parseQidianRanking`.
-- [ ] Route Qidian through `scripts/fetch-source-monthly.mjs` + `src/source-archive.mjs`.
-- [ ] Remove `scripts/fetch-qidian-monthly.mjs` and `src/monthly-archive.mjs`.
-- [ ] Update the workflow to drop the `if source == qidian` branch and the `collect:dry` /
-      `collect:month` npm scripts (replace with the generic runner for all four).
+### Phase 2 — Fold Qidian into the generic pipeline (#2) — DONE
+- [x] Register `qidian` in the plugin registry with `transport: 'browser'`, reusing
+      `parseQidianRanking` (and its strict validator via a `validate` hook).
+- [x] Route Qidian through `scripts/fetch-source-monthly.mjs` + `src/source-archive.mjs`
+      (added per-source hooks: `resolveChartUrl`, `readyCount`, `attempts`, `restrictToCurrentPeriod`,
+      per-chart `snapshotPolicy`, and `validate`).
+- [x] Remove `scripts/fetch-qidian-monthly.mjs` and `src/monthly-archive.mjs`.
+- [x] Update the workflow to drop the `if source == qidian` branch; `collect:dry` / `collect:month`
+      now call the generic runner.
+- [x] Migrated the archive test to `tests/source-archive.test.mjs`; tests 16/16 green.
+- Note: strict validation + challenge detection were moved with Qidian (covers plan #3/#6 for Qidian).
 
 ### Phase 3 — Move strictness + anti-bot into plugins (#3, #6)
 - [ ] Add an optional `validate(entry)` hook; port Qidian's `qidian.com/book/<id>` URL check

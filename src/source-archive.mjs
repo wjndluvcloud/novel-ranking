@@ -1,6 +1,6 @@
-// Generic monthly-archive writer shared by the non-Qidian sources.
-// Mirrors src/monthly-archive.mjs but is parameterised by source id + chart set
-// instead of being locked to the Qidian chart keys.
+// Generic monthly-archive writer shared by every ranking source.
+// Parameterised by source id + chart set, it validates a snapshot and writes an
+// immutable per-month archive plus a rebuilt manifest.
 import { access, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 

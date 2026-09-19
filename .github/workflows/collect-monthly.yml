@@ -88,18 +88,10 @@ jobs:
         run: |
           MONTH_END=""
           if [ "${{ github.event_name }}" = "schedule" ]; then MONTH_END="--only-month-end"; fi
-          if [ "$SOURCE" = "qidian" ]; then
-            if [ "$RUN_DRY" = "true" ]; then
-              npm run collect:dry
-            else
-              npm run collect:month
-            fi
+          if [ "$RUN_DRY" = "true" ]; then
+            node scripts/fetch-source-monthly.mjs "$SOURCE"
           else
-            if [ "$RUN_DRY" = "true" ]; then
-              node scripts/fetch-source-monthly.mjs "$SOURCE"
-            else
-              node scripts/fetch-source-monthly.mjs "$SOURCE" --publish --data-directory "data/$SOURCE" $MONTH_END
-            fi
+            node scripts/fetch-source-monthly.mjs "$SOURCE" --publish --data-directory "data/$SOURCE" $MONTH_END
           fi
 
       - name: Commit a new monthly archive

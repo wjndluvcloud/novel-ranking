@@ -12,7 +12,7 @@ Sources and their charts are declared in `sources-config.js`, which the browser 
 
 | Source | Transport | Notes |
 | --- | --- | --- |
-| Qidian | Playwright | Original collector; WAF-protected. |
+| Qidian | Playwright | Rendered browser; strict challenge detection + book-URL validation preserved. |
 | Jinjiang | HTTP + cheerio | `topten.php` server-rendered GBK table; fully scrapable. |
 | Tomato / Fanqie | Playwright | Rank list is client-rendered (raw HTML has ~10 of 20), so a browser + scroll is required. |
 | Zongheng | Playwright | Rank pages sit behind a WAF gateway; a real browser is required. |
