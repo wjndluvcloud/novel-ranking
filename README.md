@@ -41,35 +41,6 @@ npm run collect:zongheng   # Zongheng, publish (Playwright, WAF-protected)
 npm run collect:faloo      # Faloo, publish (HTTP + cheerio, real data)
 ```
 
-Jinjiang is fetched directly and works anywhere. Tomato and Zongheng require a real browser, so they are collected by the `collect-monthly` GitHub Actions workflow (which installs Chromium and has open network access).
-
-### Collecting real Tomato and Zongheng data
-
-Both need a rendered browser (Tomato lazy-loads rows; Zongheng is behind a WAF), so Chromium must be installed. Two ways:
-
-**A. GitHub Actions (recommended).** Run the `collect-monthly` workflow from the Actions tab, pick the source (or `all`), and set `dry_run: false`. The runner installs Chromium, scrapes the live charts, and commits `data/<source>/monthly/YYYY-MM.json`. Leave `dry_run: true` first to confirm each chart still yields a valid Top 20.
-
-**B. Locally.** Install the browser, then run the collector:
-
-```text
-npx playwright install chromium
-npm run collect:tomato
-npm run collect:zongheng
-```
-
-Behind a corporate TLS proxy the Chromium download fails (`unable to get local issuer certificate`) because Playwright's downloader does not use the system store. Point it at your corporate root certificate first:
-
-```powershell
-$env:NODE_EXTRA_CA_CERTS = "C:\path\to\corp-root-ca.pem"
-npx playwright install chromium
-```
-
-Use `--period YYYY-MM` to archive under a specific month (e.g. to match the Qidian archive):
-
-```text
-node scripts/fetch-source-monthly.mjs tomato --publish --data-directory data/tomato --period 2026-08
-```
-
 ## Adding a new source
 
 Every source is a self-contained plugin, so adding one needs no changes to `app.js`, the collector runner, or the archive writer:
