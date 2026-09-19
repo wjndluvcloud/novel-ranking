@@ -86,12 +86,13 @@ is generated from / mirrors the display subset for the browser.
 - [x] Generic `validateRanking` (20 entries, unique ranks/ids, title+author) stays the baseline
       every source must pass. Tests 16/16 green.
 
-### Phase 4 — De-Qidian the client (#1)
-- [ ] Add optional `fallbackGlobal` per source in the registry; `handleLoadFailure` uses
-      "does this source declare a fallback?" instead of `id === 'qidian'`.
-- [ ] Add optional per-source `genreLabel`; keep `category-labels.js` as the Qidian plugin's
-      label map, referenced from `src/sources/qidian.mjs`.
-- [ ] Remove direct `window.QIDIAN_*` references from `app.js`.
+### Phase 4 — De-Qidian the client (#1) — DONE
+- [x] Added optional `fallbackGlobal` per source in the registry (emitted into `sources-config.js`);
+      `app.js` resolves the fallback via `fallbackSnapshotFor(config)` and `handleLoadFailure`
+      keys off "does this source declare a fallback?" instead of `id === 'qidian'`.
+- [x] Genre labels are source-aware via `window.genreLabelForSource(sourceId, …)`
+      (`category-labels.js`); `app.js` no longer references a Qidian-only label map.
+- [x] `app.js` has zero `qidian`/`QIDIAN` references. Tests 16/16 green.
 
 ### Phase 5 — Tests (#5)
 - [ ] Re-point the suite at the plugin registry + `source-archive.mjs`.

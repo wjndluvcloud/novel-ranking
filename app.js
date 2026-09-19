@@ -6,7 +6,6 @@ const nextButton = document.querySelector('#month-next');
 const sourceTabs = document.querySelectorAll('.source-tab');
 
 const sources = window.RANKING_SOURCES ?? [];
-const fallbackSnapshot = window.QIDIAN_FALLBACK_SNAPSHOT;
 const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
 
 let activeSourceConfig = sources[0] ?? null;
@@ -196,10 +195,16 @@ async function selectPeriod(period) {
   }
 }
 
+function fallbackSnapshotFor(config) {
+  const globalName = config?.fallbackGlobal;
+  return globalName ? (window[globalName] ?? null) : null;
+}
+
 function showFallback(message) {
   showingFallback = true;
   archive = null;
-  activeSnapshot = validateSnapshot(fallbackSnapshot, 'qidian', activeSourceConfig.charts.map(chart => chart.key));
+  const fallback = fallbackSnapshotFor(activeSourceConfig);
+  activeSnapshot = validateSnapshot(fallback, activeSourceConfig.id, activeSourceConfig.charts.map(chart => chart.key));
   activePeriod = activeSnapshot.period;
   renderMonths();
   renderSnapshot(activeSnapshot);
@@ -207,7 +212,7 @@ function showFallback(message) {
 }
 
 function handleLoadFailure(error) {
-  if (activeSourceConfig?.id === 'qidian' && fallbackSnapshot) {
+  if (fallbackSnapshotFor(activeSourceConfig)) {
     showFallback(`Archive unavailable. Showing the verified fallback capture. (${error.message})`);
     return;
   }
@@ -254,7 +259,7 @@ async function activateSource(sourceId) {
 }
 
 async function initialise() {
-  await activateSource(sources[0]?.id ?? 'qidian');
+  await activateSource(sources[0]?.id);
 }
 
 sourceTabs.forEach(tab => {
