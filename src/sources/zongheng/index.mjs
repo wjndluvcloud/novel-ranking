@@ -20,12 +20,14 @@ export function parseZongheng(html, chart) {
     if (!author) return;
     const href = titleLink.attr('href') ?? '';
     const id = href.match(/(\d{4,})/u)?.[1] ?? `${chart.key}-${entries.length + 1}`;
+    // Zongheng charts are metric-based, so the genre is read from the row, not the chart.
+    const genre = clean(item.find('.rank-modules-works--main-item-category, .rank-modules-works--main-item-tags').first().text());
     entries.push({
       rank: entries.length + 1,
       bookId: `zongheng-${id}`,
       title,
       author,
-      category: chart.chineseLabel,
+      category: genre || null,
       subcategory: null,
       metric: null,
       metricLabel: chart.metricLabel,

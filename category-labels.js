@@ -75,12 +75,6 @@ window.SOURCE_CATEGORY_LABELS = Object.freeze({
     '架空历史': Object.freeze({ label: 'Lịch sử hư cấu', subcategories: Object.freeze({ '奇幻': 'Kỳ ảo', '仙侠': 'Tiên hiệp', '爱情': 'Tình cảm', '剧情': 'Chính kịch', '东方衍生': 'Phái sinh phương Đông', '西方衍生': 'Phái sinh phương Tây', '其他衍生': 'Phái sinh khác', '悬疑': 'Trinh thám', '古典衍生': 'Phái sinh cổ điển' }) }),
     '古色古香': Object.freeze({ label: 'Cổ phong', subcategories: Object.freeze({ '爱情': 'Tình cảm', '剧情': 'Chính kịch' }) })
   }),
-  zongheng: Object.freeze({
-    '点击榜': Object.freeze({ label: 'Bảng lượt đọc', subcategories: Object.freeze({}) }),
-    '月票榜': Object.freeze({ label: 'Bảng nguyệt phiếu', subcategories: Object.freeze({}) }),
-    '打赏榜': Object.freeze({ label: 'Bảng tặng thưởng', subcategories: Object.freeze({}) }),
-    '新书榜': Object.freeze({ label: 'Bảng sách mới', subcategories: Object.freeze({}) })
-  }),
   tomato: Object.freeze({
     '古风世情': Object.freeze({ label: 'Cổ phong thế tình', subcategories: Object.freeze({}) }),
     '玄幻言情': Object.freeze({ label: 'Huyền huyễn ngôn tình', subcategories: Object.freeze({}) }),

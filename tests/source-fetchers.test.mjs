@@ -35,7 +35,7 @@ test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
     bookId: 'zongheng-1336976',
     title: '无敌天命',
     author: '青鸾峰上',
-    category: '点击榜',
+    category: null,
     subcategory: null,
     metric: null,
     metricLabel: '点击',
