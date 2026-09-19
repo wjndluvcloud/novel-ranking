@@ -98,7 +98,13 @@ function createRankItem(entry, ranking, priorSnapshot) {
   const info = createElement('span', 'book-info');
   const genre = genreLabel(activeSourceConfig?.id, entry.category, entry.subcategory);
   info.dataset.tooltip = `Genre: ${genre}`;
-  info.append(createElement('span', 'book-name', entry.title));
+  const name = createElement(entry.bookUrl ? 'a' : 'span', 'book-name', entry.title);
+  if (entry.bookUrl) {
+    name.href = entry.bookUrl;
+    name.target = '_blank';
+    name.rel = 'noreferrer';
+  }
+  info.append(name);
   info.append(createElement('small', 'book-author', entry.author));
   item.append(info, movementFor(entry, ranking, priorSnapshot));
 
