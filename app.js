@@ -6,7 +6,6 @@ const nextButton = document.querySelector('#month-next');
 const sourceTabs = document.querySelectorAll('.source-tab');
 
 const sources = window.RANKING_SOURCES ?? [];
-const fallbackSnapshot = window.QIDIAN_FALLBACK_SNAPSHOT;
 const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
 
 let activeSourceConfig = sources[0] ?? null;
@@ -16,7 +15,6 @@ const archiveCache = new Map();
 let archive = null;
 let activePeriod = null;
 let activeSnapshot = null;
-let showingFallback = false;
 
 function monthLabel(period) {
   const [year, month] = period.split('-').map(Number);
@@ -36,7 +34,7 @@ function policyLabel(policy) {
 }
 
 function displayPolicy(policy) {
-  return showingFallback ? 'Verified fallback capture' : policyLabel(policy);
+  return policyLabel(policy);
 }
 
 function setStatus(message, kind = '') {
@@ -99,7 +97,13 @@ function createRankItem(entry, ranking, priorSnapshot) {
   const info = createElement('span', 'book-info');
   const genre = genreLabel(activeSourceConfig?.id, entry.category, entry.subcategory);
   info.dataset.tooltip = `Genre: ${genre}`;
-  info.append(createElement('span', 'book-name', entry.title));
+  const name = createElement(entry.bookUrl ? 'a' : 'span', 'book-name', entry.title);
+  if (entry.bookUrl) {
+    name.href = entry.bookUrl;
+    name.target = '_blank';
+    name.rel = 'noreferrer';
+  }
+  info.append(name);
   info.append(createElement('small', 'book-author', entry.author));
   item.append(info, movementFor(entry, ranking, priorSnapshot));
 
@@ -171,7 +175,7 @@ async function priorSnapshotFor(period) {
 }
 
 async function renderSnapshot(snapshot) {
-  const priorSnapshot = showingFallback ? null : await priorSnapshotFor(snapshot.period);
+  const priorSnapshot = await priorSnapshotFor(snapshot.period);
   grid.replaceChildren(...rankingOrder.map(key => createCard(snapshot.rankings[key], priorSnapshot)));
 }
 
@@ -182,7 +186,6 @@ async function selectPeriod(period) {
     const entry = archive.periods.find(candidate => candidate.period === period);
     activeSnapshot = validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${entry.file}`));
     activePeriod = period;
-    showingFallback = false;
     renderMonths();
     await renderSnapshot(activeSnapshot);
     const perChart = activeSnapshot.rankings[rankingOrder[0]].entries.length;
@@ -196,21 +199,7 @@ async function selectPeriod(period) {
   }
 }
 
-function showFallback(message) {
-  showingFallback = true;
-  archive = null;
-  activeSnapshot = validateSnapshot(fallbackSnapshot, 'qidian', activeSourceConfig.charts.map(chart => chart.key));
-  activePeriod = activeSnapshot.period;
-  renderMonths();
-  renderSnapshot(activeSnapshot);
-  setStatus(message, 'warning');
-}
-
 function handleLoadFailure(error) {
-  if (activeSourceConfig?.id === 'qidian' && fallbackSnapshot) {
-    showFallback(`Archive unavailable. Showing the verified fallback capture. (${error.message})`);
-    return;
-  }
   archive = null;
   activeSnapshot = null;
   activePeriod = null;
@@ -218,7 +207,7 @@ function handleLoadFailure(error) {
   months.replaceChildren();
   previousButton.disabled = true;
   nextButton.disabled = true;
-  setStatus(`${activeSourceConfig?.name ?? 'This source'} ranking is unavailable right now. (${error.message})`, 'warning');
+  setStatus(`Archive unavailable. (${error.message})`, 'warning');
 }
 
 function updateSourceTabs() {
@@ -237,7 +226,6 @@ async function activateSource(sourceId) {
   rankingOrder = config.charts.map(chart => chart.key);
   activeSnapshot = null;
   archive = null;
-  showingFallback = false;
   updateSourceTabs();
   setStatus(`Loading ${config.name} ranking…`);
   try {
@@ -254,7 +242,7 @@ async function activateSource(sourceId) {
 }
 
 async function initialise() {
-  await activateSource(sources[0]?.id ?? 'qidian');
+  await activateSource(sources[0]?.id);
 }
 
 sourceTabs.forEach(tab => {

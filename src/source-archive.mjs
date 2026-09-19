@@ -1,6 +1,6 @@
-// Generic monthly-archive writer shared by the non-Qidian sources.
-// Mirrors src/monthly-archive.mjs but is parameterised by source id + chart set
-// instead of being locked to the Qidian chart keys.
+// Generic monthly-archive writer shared by every ranking source.
+// Parameterised by source id + chart set, it validates a snapshot and writes an
+// immutable per-month archive plus a rebuilt manifest.
 import { access, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -63,6 +63,40 @@ export function validateRanking(ranking, expectedCount = 20) {
     if (!entry.author) issues.push(`${ranking?.key} rank ${entry.rank ?? '?'} has no author`);
   }
   if (issues.length) throw new SourceArchiveError(issues.join('; '), 'RANKING_INVALID', { issues });
+  return ranking;
+}
+
+// The book id is stored as `<sourceId>-<rawId>` (or the raw id for Qidian);
+// recover the raw id so it can be matched against the book URL.
+function rawBookId(bookId, sourceId) {
+  const prefix = `${sourceId}-`;
+  return bookId?.startsWith(prefix) ? bookId.slice(prefix.length) : bookId;
+}
+
+function isValidBookUrl(value, host, bookId, sourceId) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    // Exact host or a real subdomain — never a lookalike like notqidian.com.
+    if (url.host !== host && !url.host.endsWith(`.${host}`)) return false;
+    const rawId = rawBookId(bookId, sourceId);
+    return Boolean(rawId) && `${url.pathname}${url.search}`.includes(rawId);
+  } catch {
+    return false;
+  }
+}
+
+// Verifies every entry's book URL is an https link on the source's own domain
+// whose path/query contains the book id. `rule` is `{ host }` from the plugin.
+export function assertBookUrls(ranking, rule, sourceId) {
+  if (!rule?.host) return ranking;
+  const issues = [];
+  for (const entry of ranking?.entries ?? []) {
+    if (!isValidBookUrl(entry.bookUrl, rule.host, entry.bookId, sourceId)) {
+      issues.push(`${ranking?.key ?? 'chart'} rank ${entry.rank ?? '?'} has an invalid ${sourceId} book URL`);
+    }
+  }
+  if (issues.length) throw new SourceArchiveError(issues.join('; '), 'BOOK_URL_INVALID', { issues });
   return ranking;
 }
 

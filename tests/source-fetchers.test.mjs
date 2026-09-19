@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTomato, parseTomatoBookPage, parseZongheng } from '../src/source-fetchers.mjs';
+import { parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { parseZongheng } from '../src/sources/zongheng/index.mjs';
 
 test('Tomato parser skips duplicate virtual-list rows and retains rank order', () => {
   const row = (id, title) => `<article class="book-item-text"><div class="title"><a href="/page/${id}">${title}</a></div><div class="author"><a>Author ${id}</a></div></article>`;
@@ -34,7 +35,7 @@ test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
     bookId: 'zongheng-1336976',
     title: '无敌天命',
     author: '青鸾峰上',
-    category: '点击榜',
+    category: null,
     subcategory: null,
     metric: null,
     metricLabel: '点击',
