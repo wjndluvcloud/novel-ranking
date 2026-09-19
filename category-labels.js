@@ -89,10 +89,3 @@ window.genreLabelForSource = (sourceId, category, subcategory) => {
   const subcategoryLabel = categoryEntry?.subcategories[subcategory] ?? subcategory;
   return subcategoryLabel ? `${categoryLabel} · ${subcategoryLabel}` : categoryLabel;
 };
-
-window.qidianGenreLabel = (category, subcategory) => {
-  const categoryEntry = window.QIDIAN_CATEGORY_LABELS[category];
-  const categoryLabel = categoryEntry?.label ?? category ?? 'Chưa phân loại';
-  const subcategoryLabel = categoryEntry?.subcategories[subcategory] ?? subcategory;
-  return subcategoryLabel ? `${categoryLabel} · ${subcategoryLabel}` : categoryLabel;
-};
