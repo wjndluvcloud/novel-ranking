@@ -3,9 +3,10 @@ import qidian from './qidian/index.mjs';
 import jinjiang from './jinjiang/index.mjs';
 import zongheng from './zongheng/index.mjs';
 import tomato from './tomato/index.mjs';
+import faloo from './faloo/index.mjs';
 
 // Display + full metadata for every source, in tab order.
-export const SOURCES = Object.freeze([qidian, jinjiang, zongheng, tomato]);
+export const SOURCES = Object.freeze([qidian, jinjiang, zongheng, tomato, faloo]);
 
 // Fetch subset consumed by the generic collector. Qidian is excluded until its
 // dedicated collector is folded into the generic runner.
