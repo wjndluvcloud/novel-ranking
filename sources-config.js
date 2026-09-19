@@ -116,5 +116,34 @@ window.RANKING_SOURCES = Object.freeze([
         "chineseLabel": "豪门总裁"
       }
     ]
+  },
+  {
+    "id": "faloo",
+    "name": "Faloo",
+    "label": "Faloo Ranking",
+    "homeUrl": "https://b.faloo.com/",
+    "dataDir": "data/faloo",
+    "charts": [
+      {
+        "key": "monthlyTickets",
+        "label": "Monthly Tickets",
+        "chineseLabel": "月票榜"
+      },
+      {
+        "key": "monthlyClicks",
+        "label": "Monthly Clicks",
+        "chineseLabel": "月点击榜"
+      },
+      {
+        "key": "monthlyRewards",
+        "label": "Monthly Rewards",
+        "chineseLabel": "月打赏榜"
+      },
+      {
+        "key": "monthlyFlowers",
+        "label": "Monthly Flowers",
+        "chineseLabel": "月鲜花榜"
+      }
+    ]
   }
 ]);

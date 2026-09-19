@@ -2,7 +2,7 @@ name: Collect monthly rankings
 
 on:
   schedule:
-    # 23:40 Asia/Shanghai (UTC+8) on days that can be month end (Qidian only).
+    # 23:40 Asia/Shanghai (UTC+8) on days that can be month end.
     - cron: '40 15 28-31 * *'
   workflow_dispatch:
     inputs:
@@ -16,6 +16,7 @@ on:
           - jinjiang
           - zongheng
           - tomato
+          - faloo
         default: all
       dry_run:
         description: Validate the live charts without publishing archive data
@@ -40,10 +41,10 @@ jobs:
       - id: set
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo 'matrix=["qidian","jinjiang","zongheng","tomato"]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=["qidian","jinjiang","zongheng","tomato","faloo"]' >> "$GITHUB_OUTPUT"
             echo 'dry=false' >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.source }}" = "all" ]; then
-            echo 'matrix=["qidian","jinjiang","zongheng","tomato"]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=["qidian","jinjiang","zongheng","tomato","faloo"]' >> "$GITHUB_OUTPUT"
             echo 'dry=${{ inputs.dry_run }}' >> "$GITHUB_OUTPUT"
           else
             echo 'matrix=["${{ inputs.source }}"]' >> "$GITHUB_OUTPUT"

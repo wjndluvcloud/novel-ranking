@@ -89,6 +89,22 @@ window.SOURCE_CATEGORY_LABELS = Object.freeze({
     '军事': Object.freeze({ label: 'Quân sự', subcategories: Object.freeze({}) }),
     '现代言情': Object.freeze({ label: 'Ngôn tình hiện đại', subcategories: Object.freeze({}) })
   }),
+  faloo: Object.freeze({
+    '东方玄幻': Object.freeze({ label: 'Huyền huyễn phương Đông', subcategories: Object.freeze({}) }),
+    '传统武侠': Object.freeze({ label: 'Võ hiệp truyền thống', subcategories: Object.freeze({}) }),
+    '动漫同人': Object.freeze({ label: 'Đồng nhân anime', subcategories: Object.freeze({}) }),
+    '小说同人': Object.freeze({ label: 'Đồng nhân tiểu thuyết', subcategories: Object.freeze({}) }),
+    '幻想精灵': Object.freeze({ label: 'Kỳ ảo tinh linh', subcategories: Object.freeze({}) }),
+    '异世大陆': Object.freeze({ label: 'Đại lục dị giới', subcategories: Object.freeze({}) }),
+    '影视同人': Object.freeze({ label: 'Đồng nhân điện ảnh & truyền hình', subcategories: Object.freeze({}) }),
+    '星际科幻': Object.freeze({ label: 'Khoa học viễn tưởng liên sao', subcategories: Object.freeze({}) }),
+    '架空历史': Object.freeze({ label: 'Lịch sử hư cấu', subcategories: Object.freeze({}) }),
+    '武侠修真': Object.freeze({ label: 'Võ hiệp tu chân', subcategories: Object.freeze({}) }),
+    '虚拟网游': Object.freeze({ label: 'Trò chơi trực tuyến thực tế ảo', subcategories: Object.freeze({}) }),
+    '轻幻想': Object.freeze({ label: 'Kỳ ảo nhẹ', subcategories: Object.freeze({}) }),
+    '都市异能': Object.freeze({ label: 'Dị năng đô thị', subcategories: Object.freeze({}) }),
+    '都市生活': Object.freeze({ label: 'Cuộc sống đô thị', subcategories: Object.freeze({}) })
+  }),
   tomato: Object.freeze({
     '古风世情': Object.freeze({ label: 'Cổ phong thế tình', subcategories: Object.freeze({}) }),
     '玄幻言情': Object.freeze({ label: 'Huyền huyễn ngôn tình', subcategories: Object.freeze({}) }),

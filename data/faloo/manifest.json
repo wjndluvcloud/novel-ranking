@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": "faloo",
+  "periods": [
+    {
+      "period": "2026-08",
+      "file": "monthly/2026-08.json",
+      "generatedAt": "2026-09-19T09:44:37.549Z",
+      "rankings": {
+        "monthlyTickets": {
+          "label": "Monthly Tickets",
+          "chineseLabel": "月票榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-19T09:44:36.647Z",
+          "sourceUrl": "https://b.faloo.com/y_0_0_0_0_3_15_1.html"
+        },
+        "monthlyClicks": {
+          "label": "Monthly Clicks",
+          "chineseLabel": "月点击榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-19T09:44:36.647Z",
+          "sourceUrl": "https://b.faloo.com/y_0_0_0_0_0_2_1.html"
+        },
+        "monthlyRewards": {
+          "label": "Monthly Rewards",
+          "chineseLabel": "月打赏榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-19T09:44:36.647Z",
+          "sourceUrl": "https://b.faloo.com/y_0_0_0_0_0_17_1.html"
+        },
+        "monthlyFlowers": {
+          "label": "Monthly Flowers",
+          "chineseLabel": "月鲜花榜",
+          "snapshotPolicy": "month-end",
+          "capturedAt": "2026-09-19T09:44:36.647Z",
+          "sourceUrl": "https://b.faloo.com/y_0_0_0_0_0_5_1.html"
+        }
+      }
+    }
+  ]
+}

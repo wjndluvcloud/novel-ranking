@@ -1,6 +1,6 @@
 # Novel Ranking
 
-An English-language interface for browsing Top 20 rankings month by month from four Chinese web-novel platforms — **Qidian** (起点), **Jinjiang** (晋江), **Zongheng** (纵横), and **Tomato Novel** (番茄小说). Chinese titles, authors, and genre names are kept exactly as collected.
+An English-language interface for browsing Top 20 rankings month by month from five Chinese web-novel platforms — **Qidian** (起点), **Jinjiang** (晋江), **Zongheng** (纵横), **Tomato Novel** (番茄小说), and **Faloo** (飞卢). Chinese titles, authors, and genre names are kept exactly as collected.
 
 ## Run the site
 
@@ -16,6 +16,7 @@ Sources and their charts are declared in `sources-config.js`, which the browser 
 | Jinjiang | HTTP + cheerio | `topten.php` server-rendered GBK table; fully scrapable. |
 | Tomato / Fanqie | Playwright | Rank list is client-rendered (raw HTML has ~10 of 20), so a browser + scroll is required. |
 | Zongheng | Playwright | Rank pages sit behind a WAF gateway; a real browser is required. |
+| Faloo | HTTP + cheerio | Server-rendered GB2312 monthly ranking pages. |
 
 Behind a corporate TLS proxy, run the HTTP collector with `node --use-system-ca` (already set in the `collect:*` scripts). Browser-based collectors (Qidian, Tomato, Zongheng) need Chromium via `npx playwright install chromium`, which may be blocked by the same proxy locally — run those in CI where the network is open.
 
@@ -37,6 +38,7 @@ npm run collect:month      # Qidian, publish month-end archive
 npm run collect:jinjiang   # Jinjiang, publish (HTTP + cheerio, real data)
 npm run collect:tomato     # Tomato/Fanqie, publish (Playwright)
 npm run collect:zongheng   # Zongheng, publish (Playwright, WAF-protected)
+npm run collect:faloo      # Faloo, publish (HTTP + cheerio, real data)
 ```
 
 Jinjiang is fetched directly and works anywhere. Tomato and Zongheng require a real browser, so they are collected by the `collect-monthly` GitHub Actions workflow (which installs Chromium and has open network access).
@@ -70,17 +72,18 @@ node scripts/fetch-source-monthly.mjs tomato --publish --data-directory data/tom
 
 ## Adding a new source
 
-Every source is a self-contained plugin, so adding one needs no changes to `app.js`, the collector runner, the archive writer, or the workflow:
+Every source is a self-contained plugin, so adding one needs no changes to `app.js`, the collector runner, or the archive writer:
 
 1. Create `src/sources/<id>/index.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`. Source-specific helpers (parser, validator, etc.) live in the same folder.
 2. Register it in the `SOURCES` array in `src/sources/index.mjs`.
 3. Run `npm run build:config` to regenerate `sources-config.js` (the browser registry).
+4. Add its id to the GitHub Actions manual choice and collection matrices.
 
 `npm test` includes a contract test that validates every plugin's shape, plus an acceptance test that publishes an arbitrary source through the generic archive writer.
 
 ## Data and automation
 
-Publishable records are stored per source under `data/<source>/` (`manifest.json` + `monthly/YYYY-MM.json`). A single `collect-monthly` GitHub Actions workflow handles every source: on a month-end schedule it collects all four (each publishes one immutable archive per month via a last-calendar-day gate), and on manual dispatch you can collect any one source or `all` (dry-run by default). Each run tests the collectors, scrapes the chosen charts, and commits new archives to `main`.
+Publishable records are stored per source under `data/<source>/` (`manifest.json` + `monthly/YYYY-MM.json`). A single `collect-monthly` GitHub Actions workflow handles every source: on a month-end schedule it collects all five (each publishes one immutable archive per month via a last-calendar-day gate), and on manual dispatch you can collect any one source or `all` (dry-run by default). Each run tests the collectors, scrapes the chosen charts, and commits new archives to `main`.
 
 Because the non-Qidian scrapers depend on live DOM structure, run their workflow in dry-run first to confirm each chart still yields a valid Top 20 before publishing.
 

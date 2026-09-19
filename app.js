@@ -123,7 +123,6 @@ function createCard(ranking, priorSnapshot) {
   const header = createElement('div', 'card-head');
   const heading = document.createElement('div');
   heading.append(createElement('h3', '', ranking.label));
-  heading.append(createElement('p', '', `${ranking.chineseLabel} · TOP 20 · ${displayPolicy(ranking.snapshotPolicy)}`));
 
   const source = createElement('a', '', '↗');
   source.href = ranking.sourceUrl;
@@ -183,15 +182,14 @@ async function renderSnapshot(snapshot) {
 
 async function selectPeriod(period) {
   if (!archive || period === activePeriod && activeSnapshot) return;
-  setStatus(`Loading ${monthLabel(period)}…`);
+  setStatus('');
   try {
     const entry = archive.periods.find(candidate => candidate.period === period);
     activeSnapshot = validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${entry.file}`));
     activePeriod = period;
     renderMonths();
     await renderSnapshot(activeSnapshot);
-    const perChart = activeSnapshot.rankings[rankingOrder[0]].entries.length;
-    setStatus(`${monthLabel(period)} archive · ${perChart} records per chart`, 'ready');
+    setStatus('');
   } catch (error) {
     if (activeSnapshot) {
       setStatus(`Could not load ${monthLabel(period)}. Showing the last available archive.`, 'warning');
@@ -234,7 +232,7 @@ async function activateSource(sourceId) {
   activeSnapshot = null;
   archive = null;
   updateSourceTabs();
-  setStatus(`Loading ${config.name} ranking…`);
+  setStatus('');
   try {
     if (!archiveCache.has(config.id)) {
       archiveCache.set(config.id, validateManifest(await fetchJson(`${config.dataDir}/manifest.json`), config.id));

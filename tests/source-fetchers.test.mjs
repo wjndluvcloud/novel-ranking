@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { parseZongheng } from '../src/sources/zongheng/index.mjs';
+import { parseFaloo } from '../src/sources/faloo/index.mjs';
 
 test('Tomato parser skips duplicate virtual-list rows and retains rank order', () => {
   const row = (id, title) => `<article class="book-item-text"><div class="title"><a href="/page/${id}">${title}</a></div><div class="author"><a>Author ${id}</a></div></article>`;
@@ -42,5 +43,28 @@ test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
     metricProtected: true,
     bookUrl: 'https://www.zongheng.com/detail/1336976',
     coverUrl: 'https://covers.example/1.jpg'
+  });
+});
+
+test('Faloo parser reads GB2312 library ranking rows', () => {
+  const html = `<div class="TwoBox02_02">
+    <div class="TwoBox02_08"><h1><a href="//b.faloo.com/1234567.html">测试作品</a></h1></div>
+    <div class="TwoBox02_09"><a>测试作者</a></div>
+    <span class="fontSize14andHui"><a>都市生活</a><span>|</span><span>月点击：527498</span></span>
+  </div>`;
+  const [entry] = parseFaloo(html, { metricLabel: '月点击' });
+
+  assert.deepEqual(entry, {
+    rank: 1,
+    bookId: 'faloo-1234567',
+    title: '测试作品',
+    author: '测试作者',
+    category: '都市生活',
+    subcategory: null,
+    metric: '527498',
+    metricLabel: '月点击',
+    metricProtected: false,
+    bookUrl: 'https://b.faloo.com/1234567.html',
+    coverUrl: null
   });
 });

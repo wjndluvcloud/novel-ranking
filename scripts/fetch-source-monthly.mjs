@@ -5,8 +5,9 @@
 //
 // --only-month-end skips publishing unless today is the last calendar day in
 // Asia/Shanghai (used by the scheduled workflow so a month gets one archive).
-// Jinjiang is fetched directly over HTTP. Qidian, Tomato and Zongheng are
-// rendered with Playwright; the latter two can return an anti-bot response.
+// Jinjiang and Faloo are fetched directly over HTTP. Qidian, Tomato and
+// Zongheng are rendered with Playwright; the latter two can return an anti-bot
+// response.
 // Run with `node --use-system-ca` behind a corporate TLS proxy.
 import { existsSync } from 'node:fs';
 import { mkdir, rename, writeFile } from 'node:fs/promises';
@@ -44,7 +45,7 @@ function parseArguments(argv) {
     else if (!argument.startsWith('--') && !options.sourceId) options.sourceId = argument;
     else throw new Error(`Unknown argument: ${argument}`);
   }
-  if (!options.sourceId) throw new Error('A source id is required (qidian | jinjiang | zongheng | tomato).');
+  if (!options.sourceId) throw new Error('A source id is required.');
   if (options.dryRun && options.publish) throw new Error('--dry-run cannot be used with --publish.');
   if (options.period && !/^\d{4}-(0[1-9]|1[0-2])$/u.test(options.period)) {
     throw new Error('--period must use YYYY-MM.');
@@ -96,7 +97,12 @@ async function collectHttp(fetcher, capturedAt, period) {
   for (const chart of fetcher.charts) {
     const url = fetcher.resolveChartUrl ? fetcher.resolveChartUrl(chart, period) : chart.url;
     console.log(`Collecting ${fetcher.name} · ${chart.label} from ${url}`);
-    const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'zh-CN,zh;q=0.9' } });
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': fetcher.userAgent ?? USER_AGENT,
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+      }
+    });
     if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
     const buffer = Buffer.from(await response.arrayBuffer());
     const html = decodeBody(buffer, response.headers.get('content-type'));
