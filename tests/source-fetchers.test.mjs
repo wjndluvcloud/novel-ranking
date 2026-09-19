@@ -25,7 +25,7 @@ test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
     <a href="//www.zongheng.com/detail/1336976"><img src="https://covers.example/1.jpg"></a>
     <div class="rank-modules-works--main-item-content">
       <a class="rank-modules-works--main-item-title" href="//www.zongheng.com/detail/1336976">无敌天命</a>
-      <div class="rank-modules-works--main-item-author"><a>青鸾峰上</a></div>
+      <div class="rank-modules-works--main-item-author"><a>青鸾峰上</a><a>玄幻奇幻</a></div>
     </div>
   </section>`;
   const [entry] = parseZongheng(html, { key: 'clicks', chineseLabel: '点击榜', metricLabel: '点击' });
@@ -35,7 +35,7 @@ test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
     bookId: 'zongheng-1336976',
     title: '无敌天命',
     author: '青鸾峰上',
-    category: null,
+    category: '玄幻奇幻',
     subcategory: null,
     metric: null,
     metricLabel: '点击',

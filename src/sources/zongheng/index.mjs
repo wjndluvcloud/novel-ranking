@@ -16,8 +16,10 @@ export function parseZongheng(html, chart) {
       : item.find('a[href*="/book/"], a[href*="/detail/"]').first();
     const title = clean(titleLink.text());
     if (!title) return;
-    const author = clean(item.find('.rank-modules-works--main-item-author a, a[href*="/author"], .author').first().text());
+    const metadataLinks = item.find('.rank-modules-works--main-item-author a');
+    const author = clean(metadataLinks.first().text() || item.find('a[href*="/author"], .author').first().text());
     if (!author) return;
+    const category = clean(metadataLinks.eq(1).text()) || null;
     const href = titleLink.attr('href') ?? '';
     const id = href.match(/(\d{4,})/u)?.[1] ?? `${chart.key}-${entries.length + 1}`;
     entries.push({
@@ -25,8 +27,7 @@ export function parseZongheng(html, chart) {
       bookId: `zongheng-${id}`,
       title,
       author,
-      // Zongheng charts are metric-based; no per-book genre is captured.
-      category: null,
+      category,
       subcategory: null,
       metric: null,
       metricLabel: chart.metricLabel,
