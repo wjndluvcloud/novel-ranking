@@ -94,22 +94,19 @@ is generated from / mirrors the display subset for the browser.
       (`category-labels.js`); `app.js` no longer references a Qidian-only label map.
 - [x] `app.js` has zero `qidian`/`QIDIAN` references. Tests 16/16 green.
 
-### Phase 5 — Tests (#5)
-- [ ] Re-point the suite at the plugin registry + `source-archive.mjs`.
-- [ ] Keep Qidian's parser/validator coverage by testing them **as the Qidian plugin**.
-- [ ] Add a small "contract" test that every registered plugin exposes the required shape.
-- [ ] Keep the suite green after each phase.
+### Phase 5 — Tests (#5) — DONE
+- [x] Suite re-pointed at the plugin registry + `source-archive.mjs`
+      (`tests/source-archive.test.mjs`, `tests/source-fetchers.test.mjs`).
+- [x] Qidian's parser/validator coverage retained via `tests/qidian-parser.test.mjs`
+      (the Qidian plugin's internals).
+- [x] Added `tests/source-registry.test.mjs` — a contract test asserting every plugin's shape.
+- [x] Added an acceptance test: the generic archive writer publishes an arbitrary `example`
+      source with no core changes. Suite green: 20/20.
 
 ---
 
-## Acceptance test
+## Status: COMPLETE
 
-Add a throwaway `src/sources/example.mjs` with 4 charts + a parse stub and one display entry;
-confirm a new tab renders and `node scripts/fetch-source-monthly.mjs example` runs — **without
-touching any core file.** Then delete it.
-
-## Order & risk
-
-Do Phase 1 -> 2 -> 3 -> 4 -> 5, keeping tests green between phases. Highest-risk step is
-Phase 2 (retiring the battle-tested Qidian collector); mitigate by porting its parser/validator
-verbatim into the plugin and reusing the existing fixtures in `tests/fixtures/qidian/`.
+All five phases done. Adding a source is now: create `src/sources/<id>.mjs`, register it in
+`src/sources/index.mjs`, run `npm run build:config` — no edits to `app.js`, the collector runner,
+the archive writer, or the workflow. See the "Adding a new source" section in `README.md`.

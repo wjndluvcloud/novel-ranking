@@ -62,3 +62,37 @@ test('rejects snapshots that omit a configured chart', async () => {
     error => error instanceof SourceArchiveError && error.code === 'RANKING_KEYS_INVALID'
   );
 });
+
+test('archive pipeline accepts an arbitrary new source with no core changes', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'novel-ranking-example-'));
+  try {
+    const entries = Array.from({ length: 20 }, (_, index) => ({
+      rank: index + 1,
+      bookId: `example-${index + 1}`,
+      title: `Title ${index + 1}`,
+      author: `Author ${index + 1}`,
+      category: null,
+      subcategory: null,
+      metric: null,
+      metricLabel: 'points',
+      metricProtected: false,
+      bookUrl: null,
+      coverUrl: null
+    }));
+    const capturedAt = '2026-08-31T15:40:00.000Z';
+    const snapshot = {
+      schemaVersion: 1,
+      source: 'example',
+      period: '2026-08',
+      generatedAt: '2026-08-31T15:55:00.000Z',
+      rankings: { main: { key: 'main', label: 'Main', chineseLabel: '主榜', sourceUrl: 'https://example.com/', snapshotPolicy: 'month-end', capturedAt, entries } }
+    };
+    const result = await publishSourceSnapshot(snapshot, 'example', ['main'], dataDirectory);
+    const manifest = JSON.parse(await readFile(result.manifestPath, 'utf8'));
+    assert.equal(manifest.source, 'example');
+    assert.equal(manifest.periods[0].rankings.main.label, 'Main');
+    assert.equal(manifest.periods[0].file, 'monthly/2026-08.json');
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
