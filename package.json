@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "node --test --test-isolation=none",
+    "build:config": "node scripts/build-sources-config.mjs",
     "collect:dry": "node scripts/fetch-qidian-monthly.mjs --dry-run --data-directory data/qidian",
     "collect:month": "node scripts/fetch-qidian-monthly.mjs --publish --data-directory data/qidian",
     "collect:jinjiang": "node --use-system-ca scripts/fetch-source-monthly.mjs jinjiang --publish --data-directory data/jinjiang",

@@ -53,14 +53,18 @@ is generated from / mirrors the display subset for the browser.
 
 ## Work breakdown
 
-### Phase 1 — Unify the source registry (#4)
-- [ ] Create `src/sources/` with one module per source: `qidian.mjs`, `jinjiang.mjs`,
-      `tomato.mjs`, `zongheng.mjs`.
-- [ ] Fold `src/qidian-sources.mjs` (chart list + official monthly-ticket URL logic) into
-      `src/sources/qidian.mjs`.
-- [ ] Move `src/source-fetchers.mjs` descriptors into the per-source plugin modules.
-- [ ] Add `src/sources/index.mjs` that exports the aggregated registry.
-- [ ] Make `sources-config.js` derive from the registry's display subset (single source of truth).
+### Phase 1 — Unify the source registry (#4) — DONE
+- [x] Create `src/sources/` with one module per source: `qidian.mjs`, `jinjiang.mjs`,
+      `tomato.mjs`, `zongheng.mjs` (+ shared `util.mjs`).
+- [x] Fold `src/qidian-sources.mjs` chart list into `src/sources/qidian.mjs` (imports it;
+      the official monthly-ticket URL logic stays in `qidian-sources.mjs` for the legacy collector).
+- [x] Move `src/source-fetchers.mjs` descriptors into the per-source plugin modules;
+      `source-fetchers.mjs` is now a re-export shim for backward compatibility (tests/runner unchanged).
+- [x] Add `src/sources/index.mjs` exporting `SOURCES` (all four) and `SOURCE_FETCHERS`
+      (the three generic-runner sources).
+- [x] Make `sources-config.js` a generated artifact via `scripts/build-sources-config.mjs`
+      (`npm run build:config`); the registry is now the single source of truth.
+- [x] Tests remain green (16/16); browser config content unchanged.
 
 ### Phase 2 — Fold Qidian into the generic pipeline (#2)
 - [ ] Register `qidian` in the plugin registry with `transport: 'browser'`, reusing
