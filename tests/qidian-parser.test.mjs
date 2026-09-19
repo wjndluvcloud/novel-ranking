@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { officialMonthlyTicketsUrl, QIDIAN_SOURCES, sourceForPeriod } from '../src/qidian-sources.mjs';
-import { detectQidianChallenge, parseQidianRanking, QidianParseError } from '../src/qidian-parser.mjs';
-import { QidianValidationError, validateQidianRanking } from '../src/qidian-validator.mjs';
+import { officialMonthlyTicketsUrl, QIDIAN_SOURCES, sourceForPeriod } from '../src/sources/qidian/sources.mjs';
+import { detectQidianChallenge, parseQidianRanking, QidianParseError } from '../src/sources/qidian/parser.mjs';
+import { QidianValidationError, validateQidianRanking } from '../src/sources/qidian/validator.mjs';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDirectory = path.join(testDirectory, 'fixtures', 'qidian');

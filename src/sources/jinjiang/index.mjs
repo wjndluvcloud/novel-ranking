@@ -1,6 +1,6 @@
 // Jinjiang source plugin.
 import * as cheerio from 'cheerio';
-import { absolute, clean } from './util.mjs';
+import { absolute, clean } from '../util.mjs';
 
 // https://www.jjwxc.net/topten.php?orderstr=<n>&t=0  (GBK-encoded)
 // Server-rendered table: 序号 | 作者 | 作品 | 类型 | 进度 | 字数 | 作品积分 | 发表时间

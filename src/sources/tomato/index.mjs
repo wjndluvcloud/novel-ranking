@@ -1,6 +1,6 @@
 // Tomato / Fanqie source plugin.
 import * as cheerio from 'cheerio';
-import { absolute, clean } from './util.mjs';
+import { absolute, clean } from '../util.mjs';
 
 // https://fanqienovel.com/rank/<gender>_<board>_<category>
 // The list is client-rendered (only ~10 of 20 items are in the raw HTML), so the

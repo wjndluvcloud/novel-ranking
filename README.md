@@ -72,7 +72,7 @@ node scripts/fetch-source-monthly.mjs tomato --publish --data-directory data/tom
 
 Every source is a self-contained plugin, so adding one needs no changes to `app.js`, the collector runner, the archive writer, or the workflow:
 
-1. Create `src/sources/<id>.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`, `fallbackGlobal`.
+1. Create `src/sources/<id>/index.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`, `fallbackGlobal`. Source-specific helpers (parser, validator, etc.) live in the same folder.
 2. Register it in the `SOURCES` array in `src/sources/index.mjs`.
 3. Run `npm run build:config` to regenerate `sources-config.js` (the browser registry).
 

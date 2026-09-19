@@ -5,8 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildManifest, publishSourceSnapshot, SourceArchiveError, validateSnapshot } from '../src/source-archive.mjs';
-import { parseQidianRanking } from '../src/qidian-parser.mjs';
-import { QIDIAN_SOURCES } from '../src/qidian-sources.mjs';
+import { parseQidianRanking } from '../src/sources/qidian/parser.mjs';
+import { QIDIAN_SOURCES } from '../src/sources/qidian/sources.mjs';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDirectory = path.join(testDirectory, 'fixtures', 'qidian');

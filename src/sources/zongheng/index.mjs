@@ -1,6 +1,6 @@
 // Zongheng source plugin.
 import * as cheerio from 'cheerio';
-import { absolute, clean } from './util.mjs';
+import { absolute, clean } from '../util.mjs';
 
 // Rank pages sit behind a WAF gateway, so a real browser is required.
 // The runner uses Playwright for this source; the parser reads the rendered DOM.

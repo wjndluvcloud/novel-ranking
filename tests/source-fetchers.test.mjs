@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTomato, parseTomatoBookPage, parseZongheng } from '../src/source-fetchers.mjs';
+import { parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { parseZongheng } from '../src/sources/zongheng/index.mjs';
 
 test('Tomato parser skips duplicate virtual-list rows and retains rank order', () => {
   const row = (id, title) => `<article class="book-item-text"><div class="title"><a href="/page/${id}">${title}</a></div><div class="author"><a>Author ${id}</a></div></article>`;

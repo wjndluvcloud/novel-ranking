@@ -2,9 +2,9 @@
 // Reuses Qidian's dedicated parser/validator/sources as this plugin's internals,
 // so the strict challenge detection and book-URL validation are preserved while
 // Qidian runs through the generic collector like every other source.
-import { detectQidianChallenge, parseQidianRanking, QIDIAN_SELECTORS } from '../qidian-parser.mjs';
-import { validateQidianRanking } from '../qidian-validator.mjs';
-import { officialMonthlyTicketsUrl, QIDIAN_SOURCES } from '../qidian-sources.mjs';
+import { detectQidianChallenge, parseQidianRanking, QIDIAN_SELECTORS } from './parser.mjs';
+import { validateQidianRanking } from './validator.mjs';
+import { officialMonthlyTicketsUrl, QIDIAN_SOURCES } from './sources.mjs';
 
 const charts = QIDIAN_SOURCES.map(source => Object.freeze({
   key: source.key,

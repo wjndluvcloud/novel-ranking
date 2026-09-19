@@ -12,7 +12,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { parseTomatoBookPage, SOURCE_FETCHERS } from '../src/source-fetchers.mjs';
+import { parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
 import { publishSourceSnapshot, validateRanking } from '../src/source-archive.mjs';
 
 const DEFAULT_EDGE_PATHS = [
