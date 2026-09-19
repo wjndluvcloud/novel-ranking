@@ -21,7 +21,6 @@ export default Object.freeze({
   label: 'Qidian Ranking',
   homeUrl: 'https://www.qidian.com/',
   dataDir: 'data/qidian',
-  fallbackGlobal: 'QIDIAN_FALLBACK_SNAPSHOT',
   transport: 'browser',
   readySelector: QIDIAN_SELECTORS.entries,
   readyCount: 20,

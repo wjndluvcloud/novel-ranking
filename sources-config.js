@@ -28,8 +28,7 @@ window.RANKING_SOURCES = Object.freeze([
         "label": "Most Followed",
         "chineseLabel": "追读榜"
       }
-    ],
-    "fallbackGlobal": "QIDIAN_FALLBACK_SNAPSHOT"
+    ]
   },
   {
     "id": "jinjiang",

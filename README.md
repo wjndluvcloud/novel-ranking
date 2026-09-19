@@ -4,7 +4,7 @@ An English-language interface for browsing Top 20 rankings month by month from f
 
 ## Run the site
 
-Serve the folder over HTTP during development, then open the local address in a browser. Each source tab loads its own archive from `data/<source>/manifest.json` and the matching monthly snapshot. If the Qidian archive cannot be loaded, the page shows a bundled verified Qidian capture labeled as a fallback; a source with no archive yet shows an unavailable notice.
+Serve the folder over HTTP during development, then open the local address in a browser. Each source tab loads its own archive from `data/<source>/manifest.json` and the matching monthly snapshot. If a source's archive cannot be loaded, its tab shows an "Archive unavailable" notice.
 
 Sources and their charts are declared in `sources-config.js`, which the browser reads to build the tabs and load the right archive.
 
@@ -72,7 +72,7 @@ node scripts/fetch-source-monthly.mjs tomato --publish --data-directory data/tom
 
 Every source is a self-contained plugin, so adding one needs no changes to `app.js`, the collector runner, the archive writer, or the workflow:
 
-1. Create `src/sources/<id>/index.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`, `fallbackGlobal`. Source-specific helpers (parser, validator, etc.) live in the same folder.
+1. Create `src/sources/<id>/index.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`. Source-specific helpers (parser, validator, etc.) live in the same folder.
 2. Register it in the `SOURCES` array in `src/sources/index.mjs`.
 3. Run `npm run build:config` to regenerate `sources-config.js` (the browser registry).
 

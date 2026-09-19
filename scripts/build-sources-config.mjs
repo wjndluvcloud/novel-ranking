@@ -8,22 +8,18 @@ import { SOURCES } from '../src/sources/index.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const display = SOURCES.map(source => {
-  const entry = {
-    id: source.id,
-    name: source.name,
-    label: source.label,
-    homeUrl: source.homeUrl,
-    dataDir: source.dataDir,
-    charts: source.charts.map(chart => ({
-      key: chart.key,
-      label: chart.label,
-      chineseLabel: chart.chineseLabel
-    }))
-  };
-  if (source.fallbackGlobal) entry.fallbackGlobal = source.fallbackGlobal;
-  return entry;
-});
+const display = SOURCES.map(source => ({
+  id: source.id,
+  name: source.name,
+  label: source.label,
+  homeUrl: source.homeUrl,
+  dataDir: source.dataDir,
+  charts: source.charts.map(chart => ({
+    key: chart.key,
+    label: chart.label,
+    chineseLabel: chart.chineseLabel
+  }))
+}));
 
 const banner = '// AUTO-GENERATED from src/sources/*.mjs by scripts/build-sources-config.mjs.\n'
   + '// Do not edit by hand; run `npm run build:config` after changing a source plugin.\n';
