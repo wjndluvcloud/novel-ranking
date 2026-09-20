@@ -6,7 +6,7 @@ An English-language interface for browsing Top 20 rankings month by month from f
 
 Serve the folder over HTTP during development, then open the local address in a browser. Each source tab loads its own archive from `data/<source>/manifest.json` and the matching monthly snapshot. If a source's archive cannot be loaded, its tab shows an "Archive unavailable" notice.
 
-Sources and their charts are declared in `sources-config.js`, which the browser reads to build the tabs and load the right archive.
+Sources and their charts are declared in `assets/js/sources-config.js`, which the browser reads to build the tabs and load the right archive.
 
 ## Data collection per source
 
@@ -45,7 +45,7 @@ Every source is a self-contained plugin, so adding one needs no changes to `app.
 
 1. Create `src/sources/<id>/index.mjs` exporting a plugin object: `{ id, name, label, homeUrl, dataDir: 'data/<id>', transport, parse, charts: [{ key, label, chineseLabel, url }] }`. Optional hooks: `validate(ranking)`, `detectChallenge(html)`, `resolveChartUrl(chart, period)`, `readySelector`, `readyCount`, `attempts`, `restrictToCurrentPeriod`. Source-specific helpers (parser, validator, etc.) live in the same folder.
 2. Register it in the `SOURCES` array in `src/sources/index.mjs`.
-3. Run `npm run build:config` to regenerate `sources-config.js` (the browser registry).
+3. Run `npm run build:config` to regenerate `assets/js/sources-config.js` (the browser registry).
 4. Add its id to the GitHub Actions manual choice and collection matrices.
 
 `npm test` includes a contract test that validates every plugin's shape, plus an acceptance test that publishes an arbitrary source through the generic archive writer.

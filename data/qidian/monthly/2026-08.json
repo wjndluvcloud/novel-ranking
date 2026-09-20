@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "qidian",
   "period": "2026-08",
-  "generatedAt": "2026-09-17T08:01:56.056Z",
+  "generatedAt": "2026-09-19T03:31:00.000Z",
   "mode": "initial-baseline",
   "rankings": {
     "monthlyTickets": {
@@ -273,7 +273,7 @@
           "coverUrl": "https://bookcover.yuewen.com/qdbimg/349573/1047654482/150.webp"
         }
       ],
-      "capturedAt": "2026-09-17T08:01:47.403Z"
+      "capturedAt": "2026-09-19T03:31:00.000Z"
     },
     "bestSellers": {
       "key": "bestSellers",
@@ -543,7 +543,7 @@
           "coverUrl": "https://bookcover.yuewen.com/qdbimg/349573/1041604040/150.webp"
         }
       ],
-      "capturedAt": "2026-09-17T08:01:49.962Z"
+      "capturedAt": "2026-09-19T03:31:00.000Z"
     },
     "readerRetention": {
       "key": "readerRetention",
@@ -813,7 +813,7 @@
           "coverUrl": "https://bookcover.yuewen.com/qdbimg/349573/1048862481/150.webp"
         }
       ],
-      "capturedAt": "2026-09-17T08:01:52.282Z"
+      "capturedAt": "2026-09-19T03:31:00.000Z"
     },
     "mostFollowed": {
       "key": "mostFollowed",
@@ -1083,7 +1083,7 @@
           "coverUrl": "https://bookcover.yuewen.com/qdbimg/349573/1044750637/150.webp"
         }
       ],
-      "capturedAt": "2026-09-17T08:01:54.561Z"
+      "capturedAt": "2026-09-19T03:31:00.000Z"
     }
   },
   "archiveKind": "initial-baseline"

@@ -216,7 +216,7 @@ function updateSourceTabs() {
     tab.classList.toggle('active', isActive);
     tab.setAttribute('aria-selected', String(isActive));
   });
-  document.title = `Ranking · ${activeSourceConfig?.name ?? 'Novel'} Ranking History`;
+  document.title = `Novel Ranking · ${activeSourceConfig?.name ?? 'Chinese Web-Novel'} Rankings`;
   const sourceName = activeSourceConfig?.name ?? 'Novel';
   footerArchive.textContent = `Novel Ranking · Unofficial ${sourceName} ranking archive`;
   footerSource.textContent = `Source: public rankings from ${sourceName}`;

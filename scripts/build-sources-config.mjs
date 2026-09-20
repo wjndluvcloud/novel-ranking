@@ -1,4 +1,4 @@
-// Generates sources-config.js (browser global) from the source registry so the
+// Generates assets/js/sources-config.js (browser global) from the source registry so the
 // registry in src/sources/*.mjs is the single source of truth.
 // Run: node scripts/build-sources-config.mjs
 import { writeFile } from 'node:fs/promises';
@@ -25,5 +25,6 @@ const banner = '// AUTO-GENERATED from src/sources/*.mjs by scripts/build-source
   + '// Do not edit by hand; run `npm run build:config` after changing a source plugin.\n';
 const body = `window.RANKING_SOURCES = Object.freeze(${JSON.stringify(display, null, 2)});\n`;
 
-await writeFile(path.join(projectRoot, 'sources-config.js'), `${banner}${body}`, 'utf8');
-console.log(`Wrote sources-config.js (${display.length} sources).`);
+const outputFile = path.join(projectRoot, 'assets', 'js', 'sources-config.js');
+await writeFile(outputFile, `${banner}${body}`, 'utf8');
+console.log(`Wrote assets/js/sources-config.js (${display.length} sources).`);
