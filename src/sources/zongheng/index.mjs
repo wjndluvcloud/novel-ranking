@@ -39,6 +39,29 @@ export function parseZongheng(html, chart) {
   return entries;
 }
 
+export function parseZonghengBookPage(html) {
+  const $ = cheerio.load(html);
+  const nuxt = $('script').toArray().map(node => $(node).text()).find(text => text.includes('window.__NUXT__')) ?? '';
+  const encodedDescription = /detailBook:\{book:\{[\s\S]*?description:"((?:\\.|[^"\\])*)"/u.exec(nuxt)?.[1];
+  let description = '';
+  if (encodedDescription) {
+    try {
+      description = JSON.parse(`"${encodedDescription}"`);
+    } catch {
+      description = '';
+    }
+  }
+  if (!description) {
+    const metadata = clean($('meta[name="description"]').attr('content'));
+    description = /最新章节[^。]*。([\s\S]*?)\s*纵横中文网为您创造/u.exec(metadata)?.[1] ?? '';
+  }
+  if (!description) return null;
+  const introduction = clean(cheerio.load(`<div>${description}</div>`).text());
+  const readUrl = $('meta[name="og:novel:read_url"]').attr('content') ?? '';
+  const id = readUrl.match(/\/detail\/(\d+)/u)?.[1];
+  return introduction ? { ...(id ? { sourceBookId: `zongheng-${id}` } : {}), introduction } : null;
+}
+
 export default Object.freeze({
   id: 'zongheng',
   name: 'Zongheng',
@@ -49,6 +72,12 @@ export default Object.freeze({
   transport: 'browser',
   readySelector: '.rank-modules-works--main-item',
   parse: parseZongheng,
+  parseBookPage: parseZonghengBookPage,
+  detailTransport: 'http',
+  detailConcurrency: 3,
+  detailAttempts: 3,
+  detailUserAgent: 'undici',
+  resolveBookDetailUrl: entry => `https://m.zongheng.com/book/${entry.bookId.replace('zongheng-', '')}`,
   charts: [
     // Zongheng retired /rank/details.html. These Nuxt routes identify each chart.
     { key: 'clicks', label: 'Most Read', chineseLabel: '点击榜', metricLabel: '点击', url: 'https://www.zongheng.com/rank?nav=click&rankType=5' },

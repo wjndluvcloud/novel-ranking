@@ -56,6 +56,35 @@ export function detectQidianChallenge(html) {
   return null;
 }
 
+export function parseQidianBookPage(html) {
+  const $ = cheerio.load(html);
+  for (const node of $('script[type="application/json"]').toArray()) {
+    try {
+      const data = JSON.parse($(node).text());
+      const bookInfo = data?.pageContext?.pageProps?.pageData?.bookInfo;
+      const introduction = cleanText(bookInfo?.desc);
+      if (bookInfo?.bookId && introduction) {
+        return { sourceBookId: String(bookInfo.bookId), introduction };
+      }
+    } catch {
+      // Other application/json scripts may contain unrelated structured data.
+    }
+  }
+
+  const challenge = detectQidianChallenge(html);
+  if (challenge) {
+    throw new QidianParseError(`Qidian response is not a book page: ${challenge}`, 'CHALLENGE', { challenge });
+  }
+
+  const introductionNode = $('#book-intro-detail, .book-intro-detail, .book-intro p, .book-intro').first().clone();
+  introductionNode.find('script, style').remove();
+  introductionNode.find('br').replaceWith(' ');
+  const introduction = cleanText(introductionNode.text())
+    || cleanText($('meta[name="description"]').attr('content'));
+
+  return introduction ? { introduction } : null;
+}
+
 export function parseQidianRanking(html, source) {
   if (!source?.url) throw new TypeError('A Qidian source with a URL is required.');
 

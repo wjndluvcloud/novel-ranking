@@ -43,6 +43,15 @@ export function parseJinjiang(html, chart) {
   return entries;
 }
 
+export function parseJinjiangBookPage(html) {
+  const $ = cheerio.load(html);
+  const introductionNode = $('#novelintro').first().clone();
+  introductionNode.find('script, style').remove();
+  introductionNode.find('br').replaceWith(' ');
+  const introduction = clean(introductionNode.text());
+  return introduction ? { introduction } : null;
+}
+
 export default Object.freeze({
   id: 'jinjiang',
   name: 'Jinjiang',
@@ -52,6 +61,10 @@ export default Object.freeze({
   bookUrl: { host: 'jjwxc.net' },
   transport: 'http',
   parse: parseJinjiang,
+  parseBookPage: parseJinjiangBookPage,
+  detailTransport: 'http',
+  detailConcurrency: 3,
+  detailAttempts: 3,
   charts: [
     { key: 'totalScore', label: 'Total Score', chineseLabel: '总分榜', metricLabel: '积分', url: 'https://www.jjwxc.net/topten.php?orderstr=7&t=0' },
     { key: 'monthly', label: 'Monthly', chineseLabel: '月度榜', metricLabel: '积分', url: 'https://www.jjwxc.net/topten.php?orderstr=4&t=0' },

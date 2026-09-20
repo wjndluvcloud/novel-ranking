@@ -10,12 +10,12 @@
 // response.
 // Run with `node --use-system-ca` behind a corporate TLS proxy.
 import { existsSync } from 'node:fs';
-import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
-import { publishSourceSnapshot, validateRanking, assertBookUrls } from '../src/source-archive.mjs';
+import { buildManifest, publishSourceSnapshot, validateRanking, validateSnapshot, assertBookUrls } from '../src/source-archive.mjs';
 
 const DEFAULT_EDGE_PATHS = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -26,7 +26,7 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 
 function parseArguments(argv) {
   const options = {
-    sourceId: null, dryRun: false, publish: false, output: null,
+    sourceId: null, dryRun: false, publish: false, backfillDetails: false, output: null,
     dataDirectory: null, period: null, headed: false, onlyMonthEnd: false,
     diagnosticsDirectory: '.tmp/collector-diagnostics',
     browserPath: process.env.RANKING_BROWSER_PATH || null
@@ -35,6 +35,7 @@ function parseArguments(argv) {
     const argument = argv[index];
     if (argument === '--dry-run') options.dryRun = true;
     else if (argument === '--publish') options.publish = true;
+    else if (argument === '--backfill-details') options.backfillDetails = true;
     else if (argument === '--only-month-end') options.onlyMonthEnd = true;
     else if (argument === '--headed') options.headed = true;
     else if (argument === '--output') options.output = argv[++index];
@@ -47,6 +48,9 @@ function parseArguments(argv) {
   }
   if (!options.sourceId) throw new Error('A source id is required.');
   if (options.dryRun && options.publish) throw new Error('--dry-run cannot be used with --publish.');
+  if (options.backfillDetails && (!options.period || options.dryRun || options.publish || options.output)) {
+    throw new Error('--backfill-details requires --period and cannot be combined with --dry-run, --publish, or --output.');
+  }
   if (options.period && !/^\d{4}-(0[1-9]|1[0-2])$/u.test(options.period)) {
     throw new Error('--period must use YYYY-MM.');
   }
@@ -150,7 +154,119 @@ async function canonicalizeTomatoEntries(entries) {
   });
 }
 
-async function collectBrowser(fetcher, capturedAt, options, period) {
+async function loadArchivedBookDetails(dataDirectory, sourceId) {
+  const monthlyDirectory = path.join(dataDirectory, 'monthly');
+  if (!existsSync(monthlyDirectory)) return new Map();
+
+  const files = (await readdir(monthlyDirectory))
+    .filter(file => /^\d{4}-(0[1-9]|1[0-2])\.json$/u.test(file))
+    .sort((left, right) => right.localeCompare(left));
+  const detailsByBookId = new Map();
+  for (const file of files) {
+    const snapshot = JSON.parse(await readFile(path.join(monthlyDirectory, file), 'utf8'));
+    if (snapshot.source !== sourceId) continue;
+    for (const ranking of Object.values(snapshot.rankings ?? {})) {
+      for (const entry of ranking.entries ?? []) {
+        if (entry.bookId && entry.introduction && !detailsByBookId.has(entry.bookId)) {
+          detailsByBookId.set(entry.bookId, { introduction: entry.introduction });
+        }
+      }
+    }
+  }
+  return detailsByBookId;
+}
+
+async function enrichBookDetails(rankings, fetcher, context, archivedDetails = new Map()) {
+  if (!fetcher.parseBookPage) return;
+
+  const entriesByBookId = new Map();
+  for (const ranking of Object.values(rankings)) {
+    for (const entry of ranking.entries) entriesByBookId.set(entry.bookId, entry);
+  }
+  const entries = [...entriesByBookId.values()];
+  const detailsByBookId = new Map(
+    entries.filter(entry => archivedDetails.has(entry.bookId)).map(entry => [entry.bookId, archivedDetails.get(entry.bookId)])
+  );
+  for (const entry of entries) {
+    if (entry.introduction) detailsByBookId.set(entry.bookId, { introduction: entry.introduction });
+  }
+  const entriesToFetch = entries.filter(entry => !detailsByBookId.has(entry.bookId));
+  const concurrency = fetcher.detailConcurrency ?? 3;
+  let blockedChallenge = null;
+  console.log(`Reusing ${detailsByBookId.size} archived introductions; collecting ${entriesToFetch.length} new ${fetcher.name} details (concurrency ${concurrency}).`);
+
+  const details = await mapWithConcurrency(entriesToFetch, concurrency, async entry => {
+    if (blockedChallenge) return null;
+    const attempts = fetcher.detailAttempts ?? 3;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      let detailPage = null;
+      try {
+        const minimumDelay = fetcher.detailDelayMinMs ?? 3_000;
+        const maximumDelay = fetcher.detailDelayMaxMs ?? 5_000;
+        const delay = minimumDelay + Math.floor(Math.random() * Math.max(1, maximumDelay - minimumDelay));
+        await new Promise(resolve => setTimeout(resolve, delay));
+        const detailUrl = fetcher.resolveBookDetailUrl?.(entry) ?? entry.bookUrl;
+        let html;
+        if (fetcher.detailTransport === 'http') {
+          const response = await fetch(detailUrl, {
+            headers: {
+              'User-Agent': fetcher.detailUserAgent ?? USER_AGENT,
+              'Accept-Language': 'zh-CN,zh;q=0.9'
+            }
+          });
+          if (!response.ok) throw new Error(`${detailUrl} returned HTTP ${response.status}`);
+          const buffer = Buffer.from(await response.arrayBuffer());
+          html = decodeBody(buffer, response.headers.get('content-type'));
+        } else {
+          detailPage = await context.newPage();
+          await detailPage.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+          html = await detailPage.content();
+        }
+        const detail = fetcher.parseBookPage(html);
+        if (!detail?.introduction) {
+          const error = new Error('introduction was not found');
+          error.code = 'DETAIL_MISSING';
+          throw error;
+        }
+        if (detail.sourceBookId && detail.sourceBookId !== entry.bookId) {
+          throw new Error(`book ID mismatch: expected ${entry.bookId}, received ${detail.sourceBookId}`);
+        }
+        const { sourceBookId, ...storedDetail } = detail;
+        return [entry.bookId, storedDetail];
+      } catch (error) {
+        if (error?.code === 'CHALLENGE') {
+          if (!blockedChallenge) console.warn(`Stopping detail collection: ${error.message}`);
+          blockedChallenge = error.code;
+          return null;
+        }
+        if (error?.code === 'DETAIL_MISSING') {
+          console.warn(`Could not collect details for ${entry.bookId}: ${error.message}`);
+          return null;
+        }
+        if (attempt === attempts) {
+          console.warn(`Could not collect details for ${entry.bookId}: ${error.message}`);
+          return null;
+        }
+        console.warn(`Detail attempt ${attempt}/${attempts} failed for ${entry.bookId}; retrying.`);
+        await new Promise(resolve => setTimeout(resolve, 1_500 * attempt));
+      } finally {
+        await detailPage?.close();
+      }
+    }
+    return null;
+  });
+
+  for (const detail of details.filter(Boolean)) detailsByBookId.set(...detail);
+  for (const ranking of Object.values(rankings)) {
+    ranking.entries = ranking.entries.map(entry => ({
+      ...entry,
+      introduction: detailsByBookId.get(entry.bookId)?.introduction ?? entry.introduction ?? null
+    }));
+  }
+  console.log(`Collected ${detailsByBookId.size}/${entries.length} novel introductions.`);
+}
+
+async function collectBrowser(fetcher, capturedAt, options, period, archivedDetails) {
   const { chromium } = await import('playwright');
   const executablePath = resolveBrowserPath(options.browserPath);
   const browser = await chromium.launch({
@@ -208,6 +324,7 @@ async function collectBrowser(fetcher, capturedAt, options, period) {
       }
       await page.waitForTimeout(1_200);
     }
+    await enrichBookDetails(rankings, fetcher, context, archivedDetails);
   } finally {
     await browser.close();
   }
@@ -241,15 +358,35 @@ async function main() {
   }
   const currentPeriod = periodInShanghai();
   const period = options.period ?? currentPeriod;
+  const dataDirectory = options.dataDirectory ?? path.join('data', fetcher.id);
+  const chartKeys = fetcher.charts.map(chart => chart.key);
+
+  if (options.backfillDetails) {
+    if (!fetcher.parseBookPage) throw new Error(`${fetcher.name} does not support detail collection.`);
+    const snapshotPath = path.join(dataDirectory, 'monthly', `${period}.json`);
+    const snapshot = validateSnapshot(JSON.parse(await readFile(snapshotPath, 'utf8')), fetcher.id, chartKeys);
+    await enrichBookDetails(snapshot.rankings, fetcher, null, await loadArchivedBookDetails(dataDirectory, fetcher.id));
+    await writeJsonAtomically(snapshotPath, snapshot);
+    await writeJsonAtomically(path.join(dataDirectory, 'manifest.json'), await buildManifest(fetcher.id, chartKeys, dataDirectory));
+    console.log(`Backfilled novel details in ${snapshotPath}.`);
+    return;
+  }
+
   if (fetcher.restrictToCurrentPeriod && period !== currentPeriod) {
     throw new Error(`${fetcher.name} can only be captured for the current period (${currentPeriod}); its charts have no verified historical source.`);
   }
-  const dataDirectory = options.dataDirectory ?? path.join('data', fetcher.id);
   const capturedAt = new Date().toISOString();
+  const archivedDetails = fetcher.parseBookPage
+    ? await loadArchivedBookDetails(dataDirectory, fetcher.id)
+    : new Map();
 
-  const rankings = fetcher.transport === 'browser'
-    ? await collectBrowser(fetcher, capturedAt, options, period)
-    : await collectHttp(fetcher, capturedAt, period);
+  let rankings;
+  if (fetcher.transport === 'browser') {
+    rankings = await collectBrowser(fetcher, capturedAt, options, period, archivedDetails);
+  } else {
+    rankings = await collectHttp(fetcher, capturedAt, period);
+    await enrichBookDetails(rankings, fetcher, null, archivedDetails);
+  }
 
   const snapshot = {
     schemaVersion: 1,
@@ -259,8 +396,6 @@ async function main() {
     mode: options.dryRun ? 'dry-run' : 'month-end-candidate',
     rankings
   };
-
-  const chartKeys = fetcher.charts.map(chart => chart.key);
 
   if (options.publish) {
     const result = await publishSourceSnapshot(snapshot, fetcher.id, chartKeys, dataDirectory);

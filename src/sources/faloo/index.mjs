@@ -41,6 +41,22 @@ export function parseFaloo(html, chart) {
   return entries;
 }
 
+export function parseFalooBookPage(html) {
+  if (/操作太过频繁/u.test(html)) {
+    const error = new Error('Faloo rate limit: requests are too frequent.');
+    error.code = 'CHALLENGE';
+    throw error;
+  }
+  const $ = cheerio.load(html);
+  const introductionNode = $('#novel_intro, .T-L-T-C-Box1').first().clone();
+  introductionNode.find('script, style').remove();
+  introductionNode.find('br').replaceWith(' ');
+  const introduction = clean(introductionNode.text())
+    .replace(/飞卢小说网(?:提醒您|独家签约小说：)[\s\S]*$/u, '')
+    .trim();
+  return introduction ? { introduction } : null;
+}
+
 export default Object.freeze({
   id: 'faloo',
   name: 'Faloo',
@@ -54,6 +70,12 @@ export default Object.freeze({
   // These URLs expose only the live month; do not relabel them as historical data.
   restrictToCurrentPeriod: true,
   parse: parseFaloo,
+  parseBookPage: parseFalooBookPage,
+  detailTransport: 'http',
+  detailConcurrency: 1,
+  detailAttempts: 3,
+  detailUserAgent: 'undici',
+  resolveBookDetailUrl: entry => `https://wap.faloo.com/${entry.bookId.replace('faloo-', '')}.html`,
   charts: [
     { key: 'monthlyTickets', label: 'Monthly Tickets', chineseLabel: '月票榜', metricLabel: '月票', url: 'https://b.faloo.com/y_0_0_0_0_3_15_1.html' },
     { key: 'monthlyClicks', label: 'Monthly Clicks', chineseLabel: '月点击榜', metricLabel: '月点击', url: 'https://b.faloo.com/y_0_0_0_0_0_2_1.html' },

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { parseJinjiangBookPage } from '../src/sources/jinjiang/index.mjs';
+import { parseZonghengBookPage } from '../src/sources/zongheng/index.mjs';
+import { parseFalooBookPage } from '../src/sources/faloo/index.mjs';
 import { parseZongheng } from '../src/sources/zongheng/index.mjs';
 import { parseFaloo } from '../src/sources/faloo/index.mjs';
 
@@ -19,6 +22,33 @@ test('Tomato parser skips duplicate virtual-list rows and retains rank order', (
 test('Tomato book-page parser returns canonical Unicode metadata', () => {
   const metadata = parseTomatoBookPage('<div class="info-name"><h1>惹金枝</h1></div><span class="author-name-text">空留</span>');
   assert.deepEqual(metadata, { title: '惹金枝', author: '空留' });
+});
+
+test('detail-page parsers extract introductions for the other sources', () => {
+  assert.deepEqual(parseJinjiangBookPage('<div id="novelintro">Jinjiang<br>introduction</div>'), {
+    introduction: 'Jinjiang introduction'
+  });
+
+  const zongheng = `<meta name="og:novel:read_url" content="//www.zongheng.com/detail/1336976">
+    <script>window.__NUXT__={detailBook:{book:{description:"First line\\u003Cbr\\u003ESecond line"}}}</script>`;
+  assert.deepEqual(parseZonghengBookPage(zongheng), {
+    sourceBookId: 'zongheng-1336976',
+    introduction: 'First lineSecond line'
+  });
+
+  const zonghengMobile = '<meta name="description" content="《Book》最新章节：Chapter 3。Mobile introduction. 纵横中文网为您创造 a reading experience。">';
+  assert.deepEqual(parseZonghengBookPage(zonghengMobile), { introduction: 'Mobile introduction.' });
+
+  assert.deepEqual(parseFalooBookPage('<div class="T-L-T-C-Box1">Faloo story. 飞卢小说网提醒您：notice</div>'), {
+    introduction: 'Faloo story.'
+  });
+  assert.deepEqual(parseFalooBookPage('<div id="novel_intro">Mobile Faloo story. 飞卢小说网独家签约小说：notice</div>'), {
+    introduction: 'Mobile Faloo story.'
+  });
+  assert.throws(
+    () => parseFalooBookPage('<body>操作太过频繁,请稍后访问。</body>'),
+    error => error.code === 'CHALLENGE'
+  );
 });
 
 test('Zongheng parser reads redesigned Nuxt ranking rows', () => {
