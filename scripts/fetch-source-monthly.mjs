@@ -16,6 +16,7 @@ import process from 'node:process';
 import { parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
 import { buildManifest, publishSourceSnapshot, validateRanking, validateSnapshot, assertBookUrls } from '../src/source-archive.mjs';
+import { addVietnameseTranslations, DEFAULT_GEMINI_MODEL } from '../src/translation/gemini.mjs';
 
 const DEFAULT_EDGE_PATHS = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -174,6 +175,31 @@ async function loadArchivedBookDetails(dataDirectory, sourceId) {
     }
   }
   return detailsByBookId;
+}
+
+async function loadArchivedTranslations(dataDirectory, sourceId) {
+  const monthlyDirectory = path.join(dataDirectory, 'monthly');
+  if (!existsSync(monthlyDirectory)) return new Map();
+
+  const files = (await readdir(monthlyDirectory))
+    .filter(file => /^\d{4}-(0[1-9]|1[0-2])\.json$/u.test(file))
+    .sort((left, right) => right.localeCompare(left));
+  const translationsByBookId = new Map();
+  for (const file of files) {
+    const snapshot = JSON.parse(await readFile(path.join(monthlyDirectory, file), 'utf8'));
+    if (snapshot.source !== sourceId) continue;
+    for (const ranking of Object.values(snapshot.rankings ?? {})) {
+      for (const entry of ranking.entries ?? []) {
+        if (!entry.bookId) continue;
+        const existing = translationsByBookId.get(entry.bookId) ?? {};
+        const titleVi = existing.titleVi || entry.titleVi || null;
+        const authorVi = existing.authorVi || entry.authorVi || null;
+        const introductionVi = existing.introductionVi || entry.introductionVi || null;
+        if (titleVi || authorVi || introductionVi) translationsByBookId.set(entry.bookId, { titleVi, authorVi, introductionVi });
+      }
+    }
+  }
+  return translationsByBookId;
 }
 
 async function enrichBookDetails(rankings, fetcher, context, archivedDetails = new Map()) {
@@ -387,6 +413,12 @@ async function main() {
     rankings = await collectHttp(fetcher, capturedAt, period);
     await enrichBookDetails(rankings, fetcher, null, archivedDetails);
   }
+
+  await addVietnameseTranslations(rankings, await loadArchivedTranslations(dataDirectory, fetcher.id), {
+    // Validation-only runs must not consume the Gemini free quota.
+    apiKey: options.publish ? process.env.GEMINI_API_KEY : null,
+    model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL
+  });
 
   const snapshot = {
     schemaVersion: 1,

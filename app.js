@@ -96,9 +96,12 @@ function createRankItem(entry, ranking) {
   const introduction = createElement('div', 'novel-introduction');
   introduction.id = `novel-introduction-${ranking.key}-${entry.bookId}`;
   introduction.hidden = true;
+  const introductionTitle = entry.titleVi || entry.title;
+  const introductionAuthor = entry.authorVi || entry.author;
+  const introductionText = entry.introductionVi || entry.introduction || entry.description || `A ${genre || 'web novel'} by ${entry.author}.`;
   introduction.append(
-    createElement('strong', '', `${entry.title} – Introduction`),
-    createElement('p', '', entry.introduction || entry.description || `A ${genre || 'web novel'} by ${entry.author}.`)
+    createElement('strong', '', `${introductionTitle} - ${introductionAuthor}`),
+    createElement('p', '', introductionText)
   );
 
   const toggle = createElement('button', 'introduction-toggle');

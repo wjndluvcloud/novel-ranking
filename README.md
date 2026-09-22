@@ -8,6 +8,10 @@ Serve the folder over HTTP during development, then open the local address in a 
 
 Sources and their charts are declared in `assets/js/sources-config.js`, which the browser reads to build the tabs and load the right archive.
 
+## Vietnamese translations
+
+Published monthly runs translate each new novel title and introduction with `gemini-3-flash-preview`. Add an Auth key as the `GEMINI_API_KEY` repository Actions secret. Successful translations are stored as `titleVi` and `introductionVi` in the monthly archive and reused in later months; failed or unavailable translations remain `null` and do not stop publication. Dry runs never call Gemini or consume its quota.
+
 ## Data collection per source
 
 | Source | Transport | Notes |
