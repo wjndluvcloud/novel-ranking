@@ -62,6 +62,8 @@ jobs:
     env:
       RUN_DRY: ${{ needs.plan.outputs.dry }}
       SOURCE: ${{ matrix.source }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: gemini-3-flash-preview
 
     steps:
       - name: Check out main

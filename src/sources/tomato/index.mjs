@@ -44,8 +44,9 @@ export function parseTomatoBookPage(html) {
   const $ = cheerio.load(html);
   const title = clean($('.info-name h1').first().text());
   const author = clean($('.author-name-text').first().text());
+  const introduction = clean($('.page-abstract-content').first().text());
   if (!title || !author) return null;
-  return { title, author };
+  return { title, author, ...(introduction ? { introduction } : {}) };
 }
 
 export default Object.freeze({
@@ -58,6 +59,10 @@ export default Object.freeze({
   transport: 'browser',
   readySelector: '.book-item-text',
   parse: parseTomato,
+  parseBookPage: parseTomatoBookPage,
+  detailTransport: 'http',
+  detailConcurrency: 3,
+  detailAttempts: 3,
   charts: [
     { key: 'ancientRomance', label: 'Ancient Romance', chineseLabel: '古风世情', metricLabel: '在读', url: 'https://fanqienovel.com/rank/0_2_1139' },
     { key: 'fantasyRomance', label: 'Fantasy Romance', chineseLabel: '玄幻言情', metricLabel: '在读', url: 'https://fanqienovel.com/rank/0_2_248' },

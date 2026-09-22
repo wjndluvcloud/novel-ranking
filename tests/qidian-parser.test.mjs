@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { officialMonthlyTicketsUrl, QIDIAN_SOURCES, sourceForPeriod } from '../src/sources/qidian/sources.mjs';
-import { detectQidianChallenge, parseQidianRanking, QidianParseError } from '../src/sources/qidian/parser.mjs';
+import { detectQidianChallenge, parseQidianBookPage, parseQidianRanking, QidianParseError } from '../src/sources/qidian/parser.mjs';
 import { assertBookUrls, SourceArchiveError, validateRanking } from '../src/source-archive.mjs';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +47,31 @@ test('WAF probe response is detected and rejected', () => {
     () => parseQidianRanking(html, QIDIAN_SOURCES[0]),
     error => error instanceof QidianParseError && error.code === 'CHALLENGE'
   );
+});
+
+test('Qidian book pages expose a cleaned novel introduction', () => {
+  const html = `<html><head><meta name="description" content="fallback"></head><body>
+    <div class="book-intro"><p> A journey across<br>the boundless night. </p></div>
+  </body></html>`;
+  assert.deepEqual(parseQidianBookPage(html), { introduction: 'A journey across the boundless night.' });
+});
+
+test('Qidian book page parser falls back to the description metadata', () => {
+  assert.deepEqual(
+    parseQidianBookPage('<meta name="description" content="An archived introduction.">'),
+    { introduction: 'An archived introduction.' }
+  );
+});
+
+test('Qidian mobile book pages expose structured book details', () => {
+  const pageData = {
+    pageContext: { pageProps: { pageData: { bookInfo: { bookId: 1040765595, desc: '　　The official introduction.' } } } }
+  };
+  const html = `<script src="/C2WF946J0/probe.js"></script><script type="application/json">${JSON.stringify(pageData)}</script>`;
+  assert.deepEqual(parseQidianBookPage(html), {
+    sourceBookId: '1040765595',
+    introduction: 'The official introduction.'
+  });
 });
 
 test('partial rankings cannot be published', async () => {

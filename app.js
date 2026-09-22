@@ -77,23 +77,7 @@ function createElement(name, className, text) {
   return element;
 }
 
-function movementFor(entry, ranking, priorSnapshot) {
-  const priorEntries = priorSnapshot?.rankings?.[ranking.key]?.entries;
-  const prior = priorEntries?.find(candidate => candidate.bookId === entry.bookId);
-  const trend = createElement('span', 'trend same', '—');
-  if (!prior) return trend;
-  const change = prior.rank - entry.rank;
-  if (change > 0) {
-    trend.className = 'trend up';
-    trend.textContent = `↑${change}`;
-  } else if (change < 0) {
-    trend.className = 'trend down';
-    trend.textContent = `↓${Math.abs(change)}`;
-  }
-  return trend;
-}
-
-function createRankItem(entry, ranking, priorSnapshot) {
+function createRankItem(entry, ranking) {
   const item = createElement('li', 'rank-item');
   item.append(createElement('span', 'position', String(entry.rank)));
   const info = createElement('span', 'book-info');
@@ -107,18 +91,37 @@ function createRankItem(entry, ranking, priorSnapshot) {
   }
   info.append(name);
   info.append(createElement('small', 'book-author', entry.author));
-  item.append(info, movementFor(entry, ranking, priorSnapshot));
+  item.append(info);
+
+  const introduction = createElement('div', 'novel-introduction');
+  introduction.id = `novel-introduction-${ranking.key}-${entry.bookId}`;
+  introduction.hidden = true;
+  const introductionTitle = entry.titleVi || entry.title;
+  const introductionAuthor = entry.authorVi || entry.author;
+  const introductionText = entry.introductionVi || entry.introduction || entry.description || `A ${genre || 'web novel'} by ${entry.author}.`;
+  introduction.append(
+    createElement('strong', '', `${introductionTitle} - ${introductionAuthor}`),
+    createElement('p', '', introductionText)
+  );
+
+  const toggle = createElement('button', 'introduction-toggle');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', introduction.id);
+  toggle.setAttribute('aria-label', `Show introduction for ${entry.title}`);
+  toggle.title = 'Show novel introduction';
+  item.append(toggle);
 
   const copy = createElement('button', 'copy-button', '⧉');
   copy.type = 'button';
   copy.dataset.copy = `${entry.title} + ${entry.author}`;
   copy.setAttribute('aria-label', `Copy ${entry.title} and author`);
   copy.title = 'Copy title and author';
-  item.append(copy);
+  item.append(copy, introduction);
   return item;
 }
 
-function createCard(ranking, priorSnapshot) {
+function createCard(ranking) {
   const article = createElement('article', 'rank-card');
   const header = createElement('div', 'card-head');
   const heading = document.createElement('div');
@@ -132,11 +135,11 @@ function createCard(ranking, priorSnapshot) {
   header.append(heading, source);
 
   const list = createElement('ol', 'rank-list');
-  ranking.entries.forEach(entry => list.append(createRankItem(entry, ranking, priorSnapshot)));
+  ranking.entries.forEach(entry => list.append(createRankItem(entry, ranking)));
 
   const footer = createElement('div', 'card-footer');
   footer.append(
-    createElement('span', '', priorSnapshot ? 'Change from previous archive' : `Captured ${captureLabel(ranking.capturedAt)}`),
+    createElement('span', '', `Captured ${captureLabel(ranking.capturedAt)}`),
     createElement('span', 'capture-policy', displayPolicy(ranking.snapshotPolicy))
   );
   article.append(header, list, footer);
@@ -163,21 +166,8 @@ function renderMonths() {
   nextButton.disabled = !archive || index === 0;
 }
 
-async function priorSnapshotFor(period) {
-  if (!archive) return null;
-  const index = archive.periods.findIndex(entry => entry.period === period);
-  const prior = archive.periods[index + 1];
-  if (!prior) return null;
-  try {
-    return validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${prior.file}`));
-  } catch {
-    return null;
-  }
-}
-
 async function renderSnapshot(snapshot) {
-  const priorSnapshot = await priorSnapshotFor(snapshot.period);
-  grid.replaceChildren(...rankingOrder.map(key => createCard(snapshot.rankings[key], priorSnapshot)));
+  grid.replaceChildren(...rankingOrder.map(key => createCard(snapshot.rankings[key])));
 }
 
 async function selectPeriod(period) {
@@ -283,6 +273,18 @@ nextButton.addEventListener('click', () => {
 });
 
 grid.addEventListener('click', async event => {
+  const introductionToggle = event.target.closest('.introduction-toggle');
+  if (introductionToggle) {
+    const introduction = document.getElementById(introductionToggle.getAttribute('aria-controls'));
+    if (!introduction) return;
+    const isExpanded = introductionToggle.getAttribute('aria-expanded') === 'true';
+    introduction.hidden = isExpanded;
+    introductionToggle.setAttribute('aria-expanded', String(!isExpanded));
+    const title = introductionToggle.closest('.rank-item').querySelector('.book-name').textContent;
+    introductionToggle.setAttribute('aria-label', `${isExpanded ? 'Show' : 'Hide'} introduction for ${title}`);
+    introductionToggle.title = isExpanded ? 'Show novel introduction' : 'Hide novel introduction';
+    return;
+  }
   const button = event.target.closest('.copy-button');
   if (!button) return;
   try {

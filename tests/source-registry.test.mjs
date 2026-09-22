@@ -34,13 +34,26 @@ test('every fetch source exposes a valid collector contract', () => {
     for (const chart of fetcher.charts) {
       assert.equal(typeof chart.url, 'string', `${id}.${chart.key}.url`);
     }
-    for (const hook of ['validate', 'detectChallenge', 'resolveChartUrl']) {
+    for (const hook of ['validate', 'detectChallenge', 'resolveChartUrl', 'parseBookPage', 'resolveBookDetailUrl']) {
       if (fetcher[hook] !== undefined) assert.equal(typeof fetcher[hook], 'function', `${id}.${hook}`);
     }
     if (fetcher.readyCount !== undefined) assert.equal(typeof fetcher.readyCount, 'number', `${id}.readyCount`);
     if (fetcher.attempts !== undefined) assert.equal(typeof fetcher.attempts, 'number', `${id}.attempts`);
+    if (fetcher.detailConcurrency !== undefined) {
+      assert.ok(Number.isInteger(fetcher.detailConcurrency) && fetcher.detailConcurrency > 0, `${id}.detailConcurrency`);
+    }
+    if (fetcher.detailAttempts !== undefined) {
+      assert.ok(Number.isInteger(fetcher.detailAttempts) && fetcher.detailAttempts > 0, `${id}.detailAttempts`);
+    }
+    for (const field of ['detailDelayMinMs', 'detailDelayMaxMs']) {
+      if (fetcher[field] !== undefined) assert.ok(Number.isInteger(fetcher[field]) && fetcher[field] >= 0, `${id}.${field}`);
+    }
     if (fetcher.bookUrl !== undefined) assert.equal(typeof fetcher.bookUrl.host, 'string', `${id}.bookUrl.host`);
   }
+});
+
+test('Qidian limits novel-detail collection to three concurrent pages', () => {
+  assert.equal(SOURCE_FETCHERS.qidian.detailConcurrency, 3);
 });
 
 test('SOURCE_FETCHERS contains exactly the parseable sources', () => {
