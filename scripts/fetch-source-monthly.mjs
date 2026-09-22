@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { mergeTomatoEntries, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
 import { buildManifest, publishSourceSnapshot, validateRanking, validateSnapshot, assertBookUrls } from '../src/source-archive.mjs';
 import { addVietnameseTranslations, DEFAULT_GEMINI_MODEL } from '../src/translation/gemini.mjs';
@@ -153,6 +153,29 @@ async function canonicalizeTomatoEntries(entries) {
     }
     return { ...entry, ...metadata };
   });
+}
+
+async function collectTomatoEntries(page, fetcher, chart) {
+  const expectedCount = 20;
+  let entries = [];
+  // Sample each virtual-list viewport. A single page.content() call near the
+  // bottom can omit the first rows, even though the page loaded them earlier.
+  for (let step = 0; step < 30 && entries.length < expectedCount; step += 1) {
+    entries = mergeTomatoEntries(entries, fetcher.parse(await page.content(), chart), expectedCount);
+    if (entries.length === expectedCount) break;
+
+    const position = await page.evaluate(() => ({
+      top: window.scrollY,
+      height: document.documentElement.scrollHeight,
+      viewport: window.innerHeight
+    }));
+    await page.evaluate(distance => window.scrollBy(0, distance), Math.max(position.viewport * 0.8, 600));
+    await page.waitForTimeout(700);
+    // Give a lazy list at its lower boundary time to request and hydrate its
+    // remaining rows before the next sampling attempt.
+    if (position.top + position.viewport >= position.height - 2) await page.waitForTimeout(1_000);
+  }
+  return entries;
 }
 
 async function loadArchivedBookDetails(dataDirectory, sourceId) {
@@ -323,14 +346,11 @@ async function collectBrowser(fetcher, capturedAt, options, period, archivedDeta
           } else if (fetcher.readySelector) {
             await page.waitForSelector(fetcher.readySelector, { timeout: 45_000 });
           }
-          // Trigger lazy-loaded rank rows by scrolling to the bottom a few times.
-          for (let step = 0; step < 6; step += 1) {
-            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-            await page.waitForTimeout(700);
-          }
           const html = await page.content();
           assertNoChallenge(fetcher, html);
-          let entries = fetcher.parse(html, chart);
+          let entries = fetcher.id === 'tomato'
+            ? await collectTomatoEntries(page, fetcher, chart)
+            : fetcher.parse(html, chart);
           if (fetcher.id === 'tomato') entries = await canonicalizeTomatoEntries(entries);
           rankings[chart.key] = buildRanking(fetcher, chart, entries, capturedAt, url);
           break;
