@@ -37,6 +37,19 @@ export function parseTomato(html, chart) {
   return entries;
 }
 
+// A Fanqie rank list is virtualized: once the browser scrolls, rows that were
+// visible at the top can be removed from the DOM. Keep the first occurrence of
+// each book while the collector samples successive viewport positions, then
+// restore the ranking positions from that combined order.
+export function mergeTomatoEntries(existingEntries, visibleEntries, limit = 20) {
+  const entriesByBookId = new Map(existingEntries.map(entry => [entry.bookId, entry]));
+  for (const entry of visibleEntries) {
+    if (entriesByBookId.size === limit) break;
+    if (!entriesByBookId.has(entry.bookId)) entriesByBookId.set(entry.bookId, entry);
+  }
+  return [...entriesByBookId.values()].map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
 // Ranking rows use a font-obfuscated private-use character set. Individual
 // book pages are server-rendered and expose the canonical Unicode title and
 // author, so the collector uses this parser to de-obfuscate the archive.
@@ -58,6 +71,7 @@ export default Object.freeze({
   bookUrl: { host: 'fanqienovel.com' },
   transport: 'browser',
   readySelector: '.book-item-text',
+  attempts: 3,
   parse: parseTomato,
   parseBookPage: parseTomatoBookPage,
   detailTransport: 'http',

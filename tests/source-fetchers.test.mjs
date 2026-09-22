@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
+import { mergeTomatoEntries, parseTomato, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { parseJinjiangBookPage } from '../src/sources/jinjiang/index.mjs';
 import { parseZonghengBookPage } from '../src/sources/zongheng/index.mjs';
 import { parseFalooBookPage } from '../src/sources/faloo/index.mjs';
@@ -22,6 +22,14 @@ test('Tomato parser skips duplicate virtual-list rows and retains rank order', (
 test('Tomato book-page parser returns canonical Unicode metadata', () => {
   const metadata = parseTomatoBookPage('<div class="info-name"><h1>惹金枝</h1></div><span class="author-name-text">空留</span>');
   assert.deepEqual(metadata, { title: '惹金枝', author: '空留' });
+});
+
+test('Tomato virtual-list samples retain books removed from earlier viewports', () => {
+  const entry = id => ({ rank: 1, bookId: `tomato-${id}`, title: `Book ${id}` });
+  const entries = mergeTomatoEntries([entry(1), entry(2)], [entry(2), entry(3), entry(4)]);
+  assert.deepEqual(entries.map(entry => [entry.rank, entry.bookId]), [
+    [1, 'tomato-1'], [2, 'tomato-2'], [3, 'tomato-3'], [4, 'tomato-4']
+  ]);
 });
 
 test('detail-page parsers extract introductions for the other sources', () => {
