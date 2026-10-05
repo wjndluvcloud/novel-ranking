@@ -2,8 +2,9 @@ name: Collect monthly rankings
 
 on:
   schedule:
-    # 23:40 Asia/Shanghai (UTC+8) on days that can be month end.
-    - cron: '40 15 28-31 * *'
+    # 16:40 Asia/Shanghai (UTC+8) on days that can be month end.
+    # Leave time for GitHub scheduling delays and all five sequential collectors.
+    - cron: '40 8 28-31 * *'
   workflow_dispatch:
     inputs:
       source:

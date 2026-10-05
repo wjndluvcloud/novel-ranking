@@ -56,7 +56,7 @@ Every source is a self-contained plugin, so adding one needs no changes to `app.
 
 ## Data and automation
 
-Publishable records are stored per source under `data/<source>/` (`manifest.json` + `monthly/YYYY-MM.json`). A single `collect-monthly` GitHub Actions workflow handles every source: on a month-end schedule it collects all five (each publishes one immutable archive per month via a last-calendar-day gate), and on manual dispatch you can collect any one source or `all` (dry-run by default). Each run tests the collectors, scrapes the chosen charts, and commits new archives to `main`.
+Publishable records are stored per source under `data/<source>/` (`manifest.json` + `monthly/YYYY-MM.json`). A single `collect-monthly` GitHub Actions workflow handles every source: it is scheduled at 16:40 Asia/Shanghai on possible month-end days, leaving time for GitHub scheduling delays and all five collectors. The last-calendar-day gate publishes one immutable archive per month; if a collector starts after month end, it fails instead of reporting success without an archive. On manual dispatch you can collect any one source or `all` (dry-run by default). Each run tests the collectors, scrapes the chosen charts, and commits new archives to `main`.
 
 Because the non-Qidian scrapers depend on live DOM structure, run their workflow in dry-run first to confirm each chart still yields a valid Top 20 before publishing.
 

@@ -16,6 +16,7 @@ import process from 'node:process';
 import { mergeTomatoEntries, parseTomatoBookPage } from '../src/sources/tomato/index.mjs';
 import { SOURCE_FETCHERS } from '../src/sources/index.mjs';
 import { buildManifest, publishSourceSnapshot, validateRanking, validateSnapshot, assertBookUrls } from '../src/source-archive.mjs';
+import { isFirstCalendarDayInShanghai, isLastCalendarDayInShanghai, periodInShanghai } from '../src/month-end.mjs';
 import { addVietnameseTranslations, DEFAULT_GEMINI_MODEL } from '../src/translation/gemini.mjs';
 
 const DEFAULT_EDGE_PATHS = [
@@ -56,17 +57,6 @@ function parseArguments(argv) {
     throw new Error('--period must use YYYY-MM.');
   }
   return options;
-}
-
-function periodInShanghai(date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit' }).formatToParts(date);
-  return `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}`;
-}
-
-function isLastCalendarDayInShanghai(date = new Date()) {
-  const today = periodInShanghai(date);
-  const tomorrow = new Date(date.getTime() + 24 * 60 * 60 * 1000);
-  return periodInShanghai(tomorrow) !== today;
 }
 
 function resolveBrowserPath(requestedPath) {
@@ -399,6 +389,9 @@ async function main() {
   const fetcher = SOURCE_FETCHERS[options.sourceId];
   if (!fetcher) throw new Error(`Unknown source: ${options.sourceId}`);
   if (options.publish && options.onlyMonthEnd && !isLastCalendarDayInShanghai()) {
+    if (isFirstCalendarDayInShanghai()) {
+      throw new Error('Scheduled monthly collection started after the final calendar day in Asia/Shanghai; no archive was published.');
+    }
     console.log('Skipping monthly publication: today is not the final calendar day in Asia/Shanghai.');
     return;
   }
