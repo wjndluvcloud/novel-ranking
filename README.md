@@ -8,6 +8,8 @@ Serve the folder over HTTP during development, then open the local address in a 
 
 Sources and their charts are declared in `assets/js/sources-config.js`, which the browser reads to build the tabs and load the right archive.
 
+Each novel shows its rank change against the same chart and source in the previous calendar month: ↑/↓ with the number of places, — for unchanged, or NEW when it was absent from that month's Top 20. Hover over the indicator for its previous rank. Missing or unreadable previous-month archives show N/A; comparisons never skip over a missing month. The current chart remains available if the comparison archive fails to load.
+
 ## Vietnamese translations
 
 Published monthly runs translate each new novel title and introduction with `gemini-3-flash-preview`. Add an Auth key as the `GEMINI_API_KEY` repository Actions secret. Successful translations are stored as `titleVi` and `introductionVi` in the monthly archive and reused in later months; failed or unavailable translations remain `null` and do not stop publication. Dry runs never call Gemini or consume its quota.

@@ -1,3 +1,5 @@
+import { previousPeriod, compareEntries } from './assets/js/rank-comparison.js';
+
 const grid = document.querySelector('#ranking-grid');
 const months = document.querySelector('#months');
 const status = document.querySelector('#data-status');
@@ -6,6 +8,7 @@ const nextButton = document.querySelector('#month-next');
 const sourceTabs = document.querySelectorAll('.source-tab');
 const footerArchive = document.querySelector('#footer-archive');
 const footerSource = document.querySelector('#footer-source');
+const comparisonNote = document.querySelector('#rank-comparison');
 
 const sources = window.RANKING_SOURCES ?? [];
 const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => [category, subcategory].filter(Boolean).join(' · '));
@@ -13,6 +16,8 @@ const genreLabel = window.genreLabelForSource ?? ((_, category, subcategory) => 
 let activeSourceConfig = sources[0] ?? null;
 let rankingOrder = activeSourceConfig?.charts.map(chart => chart.key) ?? [];
 const archiveCache = new Map();
+const snapshotCache = new Map();
+let loadSequence = 0;
 
 let archive = null;
 let activePeriod = null;
@@ -77,9 +82,32 @@ function createElement(name, className, text) {
   return element;
 }
 
-function createRankItem(entry, ranking) {
+function createRankChange(change, comparisonPeriod) {
+  const month = monthLabel(comparisonPeriod);
+  let label = 'N/A';
+  let description = `Rank comparison unavailable for ${month}`;
+  if (change.state === 'new') {
+    label = 'NEW';
+    description = `New to this Top 20 since ${month}`;
+  } else if (change.state === 'same') {
+    label = '—';
+    description = `Unchanged from #${change.previousRank} in ${month}`;
+  } else if (change.state === 'up' || change.state === 'down') {
+    const places = Math.abs(change.delta);
+    label = `${change.state === 'up' ? '↑' : '↓'}${places}`;
+    description = `${change.state === 'up' ? 'Up' : 'Down'} ${places} ${places === 1 ? 'place' : 'places'} from #${change.previousRank} in ${month}`;
+  }
+  const badge = createElement('span', `trend ${change.state}`, label);
+  badge.title = description;
+  badge.setAttribute('aria-label', description);
+  return badge;
+}
+
+function createRankItem(entry, ranking, change, comparisonPeriod) {
   const item = createElement('li', 'rank-item');
-  item.append(createElement('span', 'position', String(entry.rank)));
+  const position = createElement('span', 'rank-position');
+  position.append(createElement('span', 'position', String(entry.rank)), createRankChange(change, comparisonPeriod));
+  item.append(position);
   const info = createElement('span', 'book-info');
   const genre = genreLabel(activeSourceConfig?.id, entry.category, entry.subcategory);
   info.dataset.tooltip = `Genre: ${genre}`;
@@ -121,7 +149,7 @@ function createRankItem(entry, ranking) {
   return item;
 }
 
-function createCard(ranking) {
+function createCard(ranking, previousRanking, comparisonPeriod) {
   const article = createElement('article', 'rank-card');
   const header = createElement('div', 'card-head');
   const heading = document.createElement('div');
@@ -135,7 +163,8 @@ function createCard(ranking) {
   header.append(heading, source);
 
   const list = createElement('ol', 'rank-list');
-  ranking.entries.forEach(entry => list.append(createRankItem(entry, ranking)));
+  const changes = compareEntries(ranking.entries, previousRanking?.entries);
+  ranking.entries.forEach(entry => list.append(createRankItem(entry, ranking, changes.get(String(entry.bookId)), comparisonPeriod)));
 
   const footer = createElement('div', 'card-footer');
   footer.append(
@@ -166,21 +195,48 @@ function renderMonths() {
   nextButton.disabled = !archive || index === 0;
 }
 
-async function renderSnapshot(snapshot) {
-  grid.replaceChildren(...rankingOrder.map(key => createCard(snapshot.rankings[key])));
+function renderSnapshot(snapshot, previousSnapshot, comparisonPeriod) {
+  grid.replaceChildren(...rankingOrder.map(key => createCard(snapshot.rankings[key], previousSnapshot?.rankings[key], comparisonPeriod)));
+}
+
+async function loadSnapshot(config, entry) {
+  const cacheKey = `${config.id}/${entry.period}`;
+  if (!snapshotCache.has(cacheKey)) {
+    const snapshot = validateSnapshot(await fetchJson(`${config.dataDir}/${entry.file}`), config.id, config.charts.map(chart => chart.key));
+    if (snapshot.period !== entry.period) throw new Error('The ranking archive has the wrong month.');
+    snapshotCache.set(cacheKey, snapshot);
+  }
+  return snapshotCache.get(cacheKey);
 }
 
 async function selectPeriod(period) {
-  if (!archive || period === activePeriod && activeSnapshot) return;
+  if (!archive) return;
+  const request = ++loadSequence;
+  const config = activeSourceConfig;
+  const comparisonPeriod = previousPeriod(period);
+  const previousEntry = archive.periods.find(candidate => candidate.period === comparisonPeriod);
+  let comparisonMessage = `Rank changes unavailable: no archive for ${monthLabel(comparisonPeriod)}.`;
   setStatus('');
   try {
     const entry = archive.periods.find(candidate => candidate.period === period);
-    activeSnapshot = validateSnapshot(await fetchJson(`${activeSourceConfig.dataDir}/${entry.file}`));
+    const [snapshot, previousSnapshot] = await Promise.all([
+      loadSnapshot(config, entry),
+      previousEntry ? loadSnapshot(config, previousEntry).catch(() => {
+        comparisonMessage = `Rank changes unavailable: could not load ${monthLabel(comparisonPeriod)}.`;
+        return null;
+      }) : null
+    ]);
+    if (request !== loadSequence) return;
+    activeSnapshot = snapshot;
     activePeriod = period;
     renderMonths();
-    await renderSnapshot(activeSnapshot);
+    renderSnapshot(snapshot, previousSnapshot, comparisonPeriod);
+    comparisonNote.textContent = previousSnapshot
+      ? `Rank changes vs ${monthLabel(comparisonPeriod)} · ↑ Up · ↓ Down · — Unchanged · NEW New to Top 20`
+      : comparisonMessage;
     setStatus('');
   } catch (error) {
+    if (request !== loadSequence) return;
     if (activeSnapshot) {
       setStatus(`Could not load ${monthLabel(period)}. Showing the last available archive.`, 'warning');
       return;
@@ -195,6 +251,7 @@ function handleLoadFailure(error) {
   activePeriod = null;
   grid.replaceChildren();
   months.replaceChildren();
+  comparisonNote.textContent = '';
   previousButton.disabled = true;
   nextButton.disabled = true;
   setStatus(`Archive unavailable. (${error.message})`, 'warning');
@@ -217,21 +274,30 @@ function updateSourceTabs() {
 async function activateSource(sourceId) {
   const config = sources.find(source => source.id === sourceId) ?? sources[0];
   if (!config) return;
+  const request = ++loadSequence;
   activeSourceConfig = config;
   rankingOrder = config.charts.map(chart => chart.key);
   activeSnapshot = null;
+  activePeriod = null;
   archive = null;
+  grid.replaceChildren();
+  months.replaceChildren();
+  comparisonNote.textContent = '';
+  previousButton.disabled = true;
+  nextButton.disabled = true;
   updateSourceTabs();
   setStatus('');
   try {
     if (!archiveCache.has(config.id)) {
       archiveCache.set(config.id, validateManifest(await fetchJson(`${config.dataDir}/manifest.json`), config.id));
     }
+    if (request !== loadSequence) return;
     archive = archiveCache.get(config.id);
     activePeriod = archive.periods[0].period;
     renderMonths();
     await selectPeriod(activePeriod);
   } catch (error) {
+    if (request !== loadSequence) return;
     handleLoadFailure(error);
   }
 }

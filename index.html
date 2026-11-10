@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="assets/js/sources-config.js"></script>
   <script src="assets/js/category-labels.js"></script>
-  <script src="app.js" defer></script>
+  <script src="app.js" type="module"></script>
 </head>
 <body>
   <header class="site-header">
@@ -31,6 +31,7 @@
         <button class="month-arrow" id="month-next" type="button" aria-label="Next month">→</button>
       </div>
       <p class="data-status" id="data-status" role="status"></p>
+      <p class="comparison-note" id="rank-comparison" role="status"></p>
       <div id="ranking-grid" class="ranking-grid" aria-live="polite"></div>
     </section>
   </main>
